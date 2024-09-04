@@ -1,41 +1,33 @@
 package mongoose
 
 import (
-	"fmt"
-	"time"
+	"context"
 
-	"dario.cat/mergo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Model struct {
-	// ID        primitive.ObjectID `bson:"_id"`
-	CreatedAt time.Time `bson:"createdAt"`
-	UpdatedAt time.Time `bson:"updatedAt"`
+type Model[M any] struct {
+	Ctx        context.Context
+	Collection *mongo.Collection
 }
 
-func Merge(model interface{}) map[string]interface{} {
-	base := Model{
-		// ID:        primitive.NewObjectID(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+func NewModel[M any](connect *Connect, name string) *Model[M] {
+	return &Model[M]{
+		Ctx:        connect.Ctx,
+		Collection: connect.Client.Database(connect.DB).Collection(name),
 	}
-	baseMap := make(map[string]interface{})
-	if err := mergo.Map(&baseMap, base); err != nil {
-		panic(err)
-	}
-	fmt.Printf("Base map is: %v\n", baseMap)
+}
 
-	modelMap := make(map[string]interface{})
-	if err := mergo.Map(&modelMap, model); err != nil {
-		panic(err)
-	}
-	fmt.Printf("Model map is: %v\n", modelMap)
-
-	if err := mergo.Map(&baseMap, modelMap); err != nil {
-		panic(err)
+func (m Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
+	schema := NewSchema(input)
+	result, err := m.Collection.InsertOne(m.Ctx, schema)
+	if err != nil {
+		return nil, err
 	}
 
-	fmt.Printf("Merged map is: %v\n", baseMap)
+	return result, nil
+}
 
-	return modelMap
+func (m Model[M]) Find() *Model[M] {
+	return &m
 }

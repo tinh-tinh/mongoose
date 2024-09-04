@@ -10,6 +10,7 @@ import (
 type Connect struct {
 	Client *mongo.Client
 	Ctx    context.Context
+	DB     string
 }
 
 func New(url string) *Connect {
