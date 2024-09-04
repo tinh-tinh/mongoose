@@ -25,31 +25,10 @@ func New(url string) *Connect {
 	return &Connect{
 		Client: client,
 		Ctx:    ctx,
+		DB:     "doban",
 	}
 }
 
 func (c *Connect) Ping() error {
 	return c.Client.Ping(c.Ctx, nil)
-}
-
-type Collection struct {
-	DB      string
-	Name    string
-	connect *Connect
-}
-
-func NewCollection(c *Connect, name string) *Collection {
-	return &Collection{
-		DB:      "doban",
-		Name:    name,
-		connect: c,
-	}
-}
-
-func (c *Collection) Create(model interface{}) error {
-	_, err := c.connect.Client.Database(c.DB).Collection(c.Name).InsertOne(c.connect.Ctx, model)
-	if err != nil {
-		return err
-	}
-	return nil
 }
