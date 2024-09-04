@@ -1,6 +1,7 @@
 package mongoose
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -22,5 +23,23 @@ func Test_Model(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+type QueryTask struct {
+	Name string `bson:"name"`
+}
+
+func Test_toDoc(t *testing.T) {
+	t.Run("Test query", func(t *testing.T) {
+		connect := New("mongodb://localhost:27017")
+		model := NewModel[Task](connect, "tasks")
+		data, err := model.Find(&QueryTask{
+			Name: "huuhuhu",
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		fmt.Println(data)
 	})
 }

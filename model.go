@@ -5,8 +5,10 @@ import (
 	"reflect"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type BaseSchema struct {
@@ -49,6 +51,42 @@ func (m Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 
-func (m Model[M]) Find() *Model[M] {
-	return &m
+func (m Model[M]) Find(filter interface{}, opt ...*options.FindOptions) ([]*M, error) {
+	var data []*M
+
+	query, err := ToDoc(filter)
+	if err != nil {
+		return data, err
+	}
+	cur, err := m.Collection.Find(m.Ctx, query, opt...)
+	if err != nil {
+		return data, err
+	}
+
+	for cur.Next(m.Ctx) {
+		var t M
+		err := cur.Decode(&t)
+		if err != nil {
+			return data, err
+		}
+		data = append(data, &t)
+	}
+
+	if err := cur.Err(); err != nil {
+		return data, err
+	}
+
+	cur.Close(m.Ctx)
+
+	return data, nil
+}
+
+func ToDoc(v interface{}) (doc *bson.D, err error) {
+	data, err := bson.Marshal(v)
+	if err != nil {
+		return
+	}
+
+	err = bson.Unmarshal(data, &doc)
+	return
 }
