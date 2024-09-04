@@ -2,10 +2,7 @@ module github.com/tinh-tinh/mongo
 
 go 1.22.0
 
-require (
-	dario.cat/mergo v1.0.1
-	go.mongodb.org/mongo-driver v1.16.1
-)
+require go.mongodb.org/mongo-driver v1.16.1
 
 require (
 	github.com/golang/snappy v0.0.4 // indirect

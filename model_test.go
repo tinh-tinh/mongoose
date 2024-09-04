@@ -2,9 +2,6 @@ package mongoose
 
 import (
 	"testing"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Task struct {
@@ -18,12 +15,7 @@ func Test_Model(t *testing.T) {
 		connect := New("mongodb://localhost:27017")
 		model := NewModel[Task](connect, "tasks")
 		_, err := model.Create(&Task{
-			BaseSchema: BaseSchema{
-				ID:        primitive.NewObjectID(),
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-			Name:   "abv",
+			Name:   "huuhuhu",
 			Status: "true",
 		})
 
