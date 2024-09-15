@@ -3,7 +3,7 @@ module github.com/tinh-tinh/mongoose
 go 1.22.0
 
 require (
-	github.com/tinh-tinh/tinhtinh v1.0.1
+	github.com/tinh-tinh/tinhtinh v1.0.3
 	go.mongodb.org/mongo-driver v1.16.1
 )
 

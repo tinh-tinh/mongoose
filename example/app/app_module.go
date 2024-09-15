@@ -15,5 +15,7 @@ func NewModule() *core.DynamicModule {
 		},
 	})
 
+	appModule.Use()
+
 	return appModule
 }
