@@ -2,6 +2,8 @@ package mongoose
 
 import (
 	"context"
+	"log"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,7 +15,9 @@ type Connect struct {
 	DB     string
 }
 
+// Url by the format: mongodb://username:password@host:port/database
 func New(url string) *Connect {
+	uri := strings.Split(url, "/")
 	opt := options.Client().ApplyURI(url)
 	ctx := context.TODO()
 
@@ -22,10 +26,12 @@ func New(url string) *Connect {
 		panic(err)
 	}
 
+	log.Println("Connect to database successful")
+
 	return &Connect{
 		Client: client,
 		Ctx:    ctx,
-		DB:     "doban",
+		DB:     uri[len(uri)-1],
 	}
 }
 

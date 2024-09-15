@@ -1,4 +1,4 @@
-module github.com/tinh-tinh/mongo
+module github.com/tinh-tinh/mongoose
 
 go 1.22.0
 
