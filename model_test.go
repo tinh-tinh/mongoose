@@ -13,7 +13,7 @@ type Task struct {
 
 func Test_Model(t *testing.T) {
 	t.Run("Test Create", func(t *testing.T) {
-		connect := New("mongodb://localhost:27017")
+		connect := New("mongodb://127.0.0.1:27017/test")
 		model := NewModel[Task](connect, "tasks")
 		_, err := model.Create(&Task{
 			Name:   "huuhuhu",
@@ -32,7 +32,7 @@ type QueryTask struct {
 
 func Test_toDoc(t *testing.T) {
 	t.Run("Test query", func(t *testing.T) {
-		connect := New("mongodb://localhost:27017")
+		connect := New("mongodb://127.0.0.1:27017/test")
 		model := NewModel[Task](connect, "tasks")
 		data, err := model.Find(&QueryTask{
 			Name: "huuhuhu",
