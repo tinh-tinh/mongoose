@@ -7,7 +7,10 @@ const CONNECT_MONGO core.Provide = "CONNECT_MONGO"
 func ForRoot(url string) core.Module {
 	return func(module *core.DynamicModule) *core.DynamicModule {
 		mongooseModule := module.New(core.NewModuleOptions{})
-		mongooseModule.NewProvider(New(url), CONNECT_MONGO)
+		mongooseModule.NewProvider(core.ProviderOptions{
+			Name:  CONNECT_MONGO,
+			Value: New(url),
+		})
 		mongooseModule.Export(CONNECT_MONGO)
 
 		return mongooseModule
