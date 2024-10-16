@@ -29,3 +29,10 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+
+    - name: Run with secret and test
+      env: 
+        MONGO_URI: ${{ secrets.MONGO_URI }}
+      run: go test ./...
+
+

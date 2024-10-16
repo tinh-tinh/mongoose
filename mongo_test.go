@@ -1,17 +1,14 @@
 package mongoose
 
 import (
-	"fmt"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_Connect(t *testing.T) {
-	t.Run("Connect", func(t *testing.T) {
-		connect := New("mongodb://127.0.0.1:27017/test")
-		err := connect.Ping()
-		if err != nil {
-			t.Error(err)
-		}
-		fmt.Print("success")
-	})
+	connect := New(os.Getenv("MONGO_URI"))
+	err := connect.Ping()
+	require.Nil(t, err)
 }
