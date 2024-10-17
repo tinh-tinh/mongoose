@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type Task struct {
-	BaseSchema `bson:"inline"`
-	Name       string `bson:"name"`
-	Status     string `bson:"status"`
-}
-
 func Test_Create(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	_, err := model.Create(&Task{
@@ -24,6 +24,12 @@ func Test_Create(t *testing.T) {
 }
 
 func Test_CreateMany(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	_, err := model.CreateMany([]*Task{
@@ -44,6 +50,12 @@ type QueryTask struct {
 }
 
 func Test_UpdateOne(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
@@ -66,6 +78,12 @@ func Test_UpdateOne(t *testing.T) {
 }
 
 func Test_UpdateMany(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	err := model.UpdateMany(&QueryTask{
@@ -77,6 +95,12 @@ func Test_UpdateMany(t *testing.T) {
 }
 
 func Test_DeleteOne(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	err := model.Delete(&QueryTask{
@@ -86,6 +110,12 @@ func Test_DeleteOne(t *testing.T) {
 }
 
 func Test_DeleteMany(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	err := model.DeleteMany(&QueryTask{

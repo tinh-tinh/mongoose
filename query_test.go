@@ -9,6 +9,12 @@ import (
 )
 
 func Test_Find(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	data, err := model.Find(&QueryTask{
@@ -21,6 +27,12 @@ func Test_Find(t *testing.T) {
 }
 
 func Test_FindOne(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	data, err := model.FindOne(&QueryTask{
@@ -41,6 +53,12 @@ func Test_FindOne(t *testing.T) {
 }
 
 func Test_FindByID(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
