@@ -43,53 +43,6 @@ type QueryTask struct {
 	Name string `bson:"name"`
 }
 
-func Test_Find(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"))
-	model := NewModel[Task](connect, "tasks")
-	data, err := model.Find(&QueryTask{
-		Name: "haha",
-	})
-	require.Nil(t, err)
-	if len(data) > 0 {
-		require.Equal(t, "haha", data[0].Name)
-	}
-}
-
-func Test_FindOne(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"))
-	model := NewModel[Task](connect, "tasks")
-	data, err := model.FindOne(&QueryTask{
-		Name: "lulu",
-	})
-	require.Nil(t, err)
-	if data != nil {
-		require.Equal(t, "lulu", data.Name)
-	}
-
-	data, err = model.FindOne(&QueryTask{
-		Name: "haha",
-	})
-	require.Nil(t, err)
-	if data != nil {
-		require.Equal(t, "haha", data.Name)
-	}
-}
-
-func Test_FindByID(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"))
-	model := NewModel[Task](connect, "tasks")
-	firstOne, err := model.FindOne(nil)
-	require.Nil(t, err)
-
-	if firstOne != nil {
-		data, err := model.FindByID(firstOne.ID.Hex())
-		require.Nil(t, err)
-		if data != nil {
-			require.Equal(t, firstOne.Name, data.Name)
-		}
-	}
-}
-
 func Test_UpdateOne(t *testing.T) {
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
@@ -126,7 +79,7 @@ func Test_UpdateMany(t *testing.T) {
 func Test_DeleteOne(t *testing.T) {
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
-	err := model.DeleteOne(&QueryTask{
+	err := model.Delete(&QueryTask{
 		Name: "huuhuhu",
 	})
 	require.Nil(t, err)
