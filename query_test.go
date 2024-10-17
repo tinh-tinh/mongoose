@@ -97,7 +97,7 @@ func Test_FindOptions(t *testing.T) {
 	}
 
 	data, err := model.FindOne(nil, QueryOptions{
-		Sort: bson.D{{"enrollment", -1}},
+		Sort: bson.D{{Key: "enrollment", Value: -1}},
 	})
 
 	require.Nil(t, err)
@@ -108,12 +108,12 @@ func Test_FindOptions(t *testing.T) {
 	}
 
 	list, err := model.Find(nil, QueriesOptions{
-		Sort:  bson.D{{"enrollment", -1}},
+		Sort:  bson.D{{Key: "enrollment", Value: -1}},
 		Limit: 2,
 		Skip:  2,
 		Projection: bson.D{
-			{"title", 1},
-			{"enrollment", 1},
+			{Key: "title", Value: 1},
+			{Key: "enrollment", Value: 1},
 		},
 	})
 	require.Nil(t, err)

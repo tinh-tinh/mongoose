@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (m Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
+func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
 	ct := reflect.ValueOf(input).Elem()
 	for i := 0; i < ct.NumField(); i++ {
 		field := ct.Type().Field(i)
@@ -30,7 +30,7 @@ func (m Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 
-func (m Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
+func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	data := make([]interface{}, 0)
 
 	for _, v := range input {
@@ -57,7 +57,7 @@ func (m Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	return result, nil
 }
 
-func (m Model[M]) Update(filter interface{}, data interface{}) error {
+func (m *Model[M]) Update(filter interface{}, data interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (m Model[M]) Update(filter interface{}, data interface{}) error {
 	return nil
 }
 
-func (m Model[M]) UpdateMany(filter interface{}, data interface{}) error {
+func (m *Model[M]) UpdateMany(filter interface{}, data interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (m Model[M]) UpdateMany(filter interface{}, data interface{}) error {
 	return nil
 }
 
-func (m Model[M]) Delete(filter interface{}) error {
+func (m *Model[M]) Delete(filter interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (m Model[M]) Delete(filter interface{}) error {
 	return nil
 }
 
-func (m Model[M]) DeleteMany(filter interface{}) error {
+func (m *Model[M]) DeleteMany(filter interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
