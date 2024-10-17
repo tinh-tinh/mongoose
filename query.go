@@ -49,7 +49,7 @@ func ParseFindOptions(opt QueriesOptions) *options.FindOptions {
 	return opts
 }
 
-func (m Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error) {
+func (m *Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error) {
 	var data []*M
 
 	query, err := ToDoc(filter)
@@ -85,7 +85,7 @@ func (m Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error) 
 	return data, nil
 }
 
-func (m Model[M]) FindOne(filter interface{}, opt ...QueryOptions) (*M, error) {
+func (m *Model[M]) FindOne(filter interface{}, opt ...QueryOptions) (*M, error) {
 	var data M
 
 	query, err := ToDoc(filter)
@@ -109,7 +109,7 @@ func (m Model[M]) FindOne(filter interface{}, opt ...QueryOptions) (*M, error) {
 	return &data, nil
 }
 
-func (m Model[M]) FindByID(id string, opt ...QueryOptions) (*M, error) {
+func (m *Model[M]) FindByID(id string, opt ...QueryOptions) (*M, error) {
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (m Model[M]) FindByID(id string, opt ...QueryOptions) (*M, error) {
 	return m.FindOne(query, opt...)
 }
 
-func (m Model[M]) Count(filter interface{}) (int64, error) {
+func (m *Model[M]) Count(filter interface{}) (int64, error) {
 	query, err := ToDoc(filter)
 	if err != nil {
 		return 0, err
