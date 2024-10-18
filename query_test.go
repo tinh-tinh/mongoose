@@ -1,6 +1,7 @@
 package mongoose
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -123,4 +124,85 @@ func Test_FindOptions(t *testing.T) {
 	require.Equal(t, "Modern Poetry", list[1].Title)
 
 	require.Empty(t, list[0].CourseId)
+}
+
+func Test_FindOneAndUpdate(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		found, err := model.FindOneAndUpdate(&QueryTask{
+			Name: firstOne.Name,
+		}, &Task{
+			Status: "vcl",
+		})
+		require.Nil(t, err)
+		fmt.Println(found)
+
+		reFirst, err := model.FindOne(&QueryTask{
+			Name: firstOne.Name,
+		})
+		require.Nil(t, err)
+		require.Equal(t, "vcl", reFirst.Status)
+	}
+}
+
+func Test_FindOneAndReplace(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		_, err := model.FindOneAndReplace(&QueryTask{
+			Name: firstOne.Name,
+		}, &Task{
+			Name: "lulu",
+		})
+		require.Nil(t, err)
+
+		reFirst, err := model.FindOne(&QueryTask{
+			Name: "lulu",
+		})
+		require.Nil(t, err)
+		require.Equal(t, "lulu", reFirst.Name)
+	}
+}
+
+func Test_FindOneAndDelete(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		found, err := model.FindOneAndDelete(&QueryTask{
+			Name: firstOne.Name,
+		})
+		require.Nil(t, err)
+
+		find, err := model.FindByID(found.ID.Hex())
+		require.Nil(t, err)
+		require.Nil(t, find)
+	}
 }

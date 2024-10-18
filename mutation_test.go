@@ -56,10 +56,6 @@ func Test_UpdateOne(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	type UpdateTask struct {
-		Status string `bson:"status"`
-	}
-
 	connect := New(os.Getenv("MONGO_URI"))
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
@@ -68,7 +64,7 @@ func Test_UpdateOne(t *testing.T) {
 	if firstOne != nil {
 		err := model.Update(&QueryTask{
 			Name: firstOne.Name,
-		}, &UpdateTask{
+		}, &Task{
 			Status: "abc",
 		})
 		require.Nil(t, err)
