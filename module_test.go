@@ -20,6 +20,13 @@ func Test_Module(t *testing.T) {
 	bookController := func(module *core.DynamicModule) *core.DynamicController {
 		ctrl := module.NewController("books")
 
+		ctrl.Get("connect", func(ctx core.Ctx) error {
+			connect := InjectConnect(module)
+			return ctx.JSON(core.Map{
+				"data": connect,
+			})
+		})
+
 		ctrl.Post("", func(ctx core.Ctx) error {
 			service := InjectModel[Book](module)
 			data, err := service.Create(&Book{
@@ -84,6 +91,10 @@ func Test_Module(t *testing.T) {
 	require.Equal(t, 200, resp.StatusCode)
 
 	resp, err = testClient.Get(testServer.URL + "/app/books")
+	require.Nil(t, err)
+	require.Equal(t, 200, resp.StatusCode)
+
+	resp, err = testClient.Get(testServer.URL + "/app/books/connect")
 	require.Nil(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 }

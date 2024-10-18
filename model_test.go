@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_Model(t *testing.T) {
@@ -24,6 +25,34 @@ func Test_Model(t *testing.T) {
 	model.Set(&UpdateBook{Title: "abc", Level: 1})
 	err := model.Save()
 	require.Nil(t, err)
+}
+
+func Test_Update(t *testing.T) {
+	type Book struct {
+		BaseSchema `bson:"inline"`
+		Title      string `bson:"title"`
+		Author     string `bson:"author"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Book](connect, "books")
+
+	type UpdateBook struct {
+		ID    primitive.ObjectID `bson:"_id"`
+		Title string             `bson:"title"`
+		Level int                `bson:"level"`
+	}
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+	if firstOne != nil {
+		model.Set(&UpdateBook{
+			ID:    firstOne.ID,
+			Title: "abc",
+			Level: 1,
+		})
+		err := model.Save()
+		require.Nil(t, err)
+	}
 }
 
 func Test_Recusive(t *testing.T) {
