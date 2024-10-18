@@ -28,6 +28,9 @@ type Model[M any] struct {
 	Collection *mongo.Collection
 }
 
+// NewModel returns a new instance of Model[M] with the given connect and name
+// name is the name of the collection in the database
+// the returned Model[M] is used to interact with the collection in the database
 func NewModel[M any](connect *Connect, name string) *Model[M] {
 	return &Model[M]{
 		Ctx:        connect.Ctx,
@@ -35,6 +38,12 @@ func NewModel[M any](connect *Connect, name string) *Model[M] {
 	}
 }
 
+// Set sets the data of the model to the given data.
+// It iterates over the struct fields of the given data and sets the corresponding field of the model to the value of the field.
+// If the field is not found in the model, it is not set.
+// If the field is not tagged with bson, the field name is used as the key.
+// If the field is tagged with bson, the tag value is used as the key.
+// The given data must be a struct.
 func (m *Model[M]) Set(data interface{}) {
 	var model M
 
@@ -57,6 +66,12 @@ func (m *Model[M]) Set(data interface{}) {
 	}
 }
 
+// Save saves the changes to the model in the database.
+// If the model has no ID, InsertOne is used to insert the document.
+// If the model has an ID, UpdateByID is used to update the existing document.
+// The createdAt and updatedAt fields are automatically set if not present.
+// If the model has no changes, Save does nothing.
+// Save returns an error if the operation fails.
 func (m *Model[M]) Save() error {
 	if len(m.docs) == 0 {
 		return nil
@@ -89,6 +104,9 @@ func (m *Model[M]) Save() error {
 	return nil
 }
 
+// ToDoc converts an interface{} to a bson.D, suitable for use with the bson and mongo packages.
+// If the input is nil, ToDoc returns an empty bson.D.
+// ToDoc returns an error if the input cannot be marshaled.
 func ToDoc(v interface{}) (doc *bson.D, err error) {
 	if v == nil {
 		return &bson.D{}, nil

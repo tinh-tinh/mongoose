@@ -9,6 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Create creates a new document in the collection using the provided input.
+// It validates the input data and inserts a new document into the collection.
+// Returns the result of the insertion as an *mongo.InsertOneResult and any error encountered.
 func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
 	m.validData(input, "insert")
 	result, err := m.Collection.InsertOne(m.Ctx, input)
@@ -19,6 +22,9 @@ func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 
+// CreateMany creates multiple new documents in the collection using the provided input.
+// It validates each document data and inserts new documents into the collection.
+// Returns the result of the insertion as an *mongo.InsertManyResult and any error encountered.
 func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	data := make([]interface{}, 0)
 
@@ -46,6 +52,11 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	return result, nil
 }
 
+// Update updates a single document in the collection based on the provided filter and new data.
+// It converts the filter to a BSON document using ToDoc.
+// The new data is validated and prepared for update using m.validData.
+// Finally, it performs the update operation using UpdateOne with the $set operator.
+// Returns an error if the update operation fails.
 func (m *Model[M]) Update(filter interface{}, data *M) error {
 	query, err := ToDoc(filter)
 	if err != nil {
@@ -61,6 +72,11 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 	return nil
 }
 
+// UpdateMany updates multiple documents in the collection based on the provided filter and new data.
+// It converts the filter to a BSON document using ToDoc.
+// The new data is validated and prepared for update using m.validData.
+// Finally, it performs the update operation using UpdateMany with the $set operator.
+// Returns an error if the update operation fails.
 func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 	query, err := ToDoc(filter)
 	if err != nil {
@@ -77,6 +93,10 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 	return nil
 }
 
+// Delete deletes a single document in the collection based on the provided filter.
+// It converts the filter to a BSON document using ToDoc.
+// Finally, it performs the delete operation using DeleteOne.
+// Returns an error if the delete operation fails.
 func (m *Model[M]) Delete(filter interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
@@ -91,6 +111,10 @@ func (m *Model[M]) Delete(filter interface{}) error {
 	return nil
 }
 
+// DeleteMany deletes multiple documents in the collection based on the provided filter.
+// It converts the filter to a BSON document using ToDoc.
+// Finally, it performs the delete operation using DeleteMany.
+// Returns an error if the delete operation fails.
 func (m *Model[M]) DeleteMany(filter interface{}) error {
 	query, err := ToDoc(filter)
 	if err != nil {
@@ -105,6 +129,15 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 	return nil
 }
 
+// validData validates and prepares the data for update/insert.
+// It iterates over the struct fields of the given data and sets the corresponding field of the model to the value of the field.
+// If the field is not found in the model, it is not set.
+// If the field is tagged with bson, the tag value is used as the key.
+// If mutation is "insert", it sets the createdAt and updatedAt to the current time.
+// If mutation is "replace", it sets the createdAt to the current time.
+// If mutation is "update", it sets the updatedAt to the current time.
+// The given data must be a struct.
+// It returns the validated data as a bson.E slice.
 func (m *Model[M]) validData(data *M, mutation string) []bson.E {
 	upsert := []bson.E{}
 	if mutation == "insert" {

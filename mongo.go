@@ -15,7 +15,10 @@ type Connect struct {
 	DB     string
 }
 
-// Url by the format: mongodb://username:password@host:port/database
+// New creates a new Connect instance by establishing a connection to a MongoDB
+// database using the provided URI. It returns a pointer to the Connect struct,
+// which contains the MongoDB client, context, and the database name extracted
+// from the URI. If the connection fails, the function will panic.
 func New(url string) *Connect {
 	uri := strings.Split(url, "/")
 	opt := options.Client().ApplyURI(url)
@@ -35,6 +38,8 @@ func New(url string) *Connect {
 	}
 }
 
+// Ping pings the MongoDB server to check if the connection is alive.
+// It returns an error if the connection is not alive.
 func (c *Connect) Ping() error {
 	return c.Client.Ping(c.Ctx, nil)
 }
