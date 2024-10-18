@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_Find(t *testing.T) {
@@ -99,6 +100,10 @@ func Test_FindOptions(t *testing.T) {
 
 	data, err := model.FindOne(nil, QueryOptions{
 		Sort: bson.D{{Key: "enrollment", Value: -1}},
+		Projection: bson.D{
+			{Key: "title", Value: 1},
+			{Key: "enrollment", Value: 1},
+		},
 	})
 
 	require.Nil(t, err)
@@ -155,6 +160,32 @@ func Test_FindOneAndUpdate(t *testing.T) {
 	}
 }
 
+func Test_FindByIDAndUpdate(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		_, err := model.FindByIDAndUpdate(firstOne.ID.Hex(), &Task{
+			Status: "vcl",
+		})
+		require.Nil(t, err)
+
+		reFirst, err := model.FindOne(&QueryTask{
+			Name: firstOne.Name,
+		})
+		require.Nil(t, err)
+		require.Equal(t, "vcl", reFirst.Status)
+	}
+}
+
 func Test_FindOneAndReplace(t *testing.T) {
 	type Task struct {
 		BaseSchema `bson:"inline"`
@@ -171,6 +202,32 @@ func Test_FindOneAndReplace(t *testing.T) {
 		_, err := model.FindOneAndReplace(&QueryTask{
 			Name: firstOne.Name,
 		}, &Task{
+			Name: "lulu",
+		})
+		require.Nil(t, err)
+
+		reFirst, err := model.FindOne(&QueryTask{
+			Name: "lulu",
+		})
+		require.Nil(t, err)
+		require.Equal(t, "lulu", reFirst.Name)
+	}
+}
+
+func Test_FindByIDAndReplace(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		_, err := model.FindByIDAndReplace(firstOne.ID.Hex(), &Task{
 			Name: "lulu",
 		})
 		require.Nil(t, err)
@@ -205,4 +262,32 @@ func Test_FindOneAndDelete(t *testing.T) {
 		require.Nil(t, err)
 		require.Nil(t, find)
 	}
+}
+
+func Test_FindByIDAndDelete(t *testing.T) {
+	type Task struct {
+		BaseSchema `bson:"inline"`
+		Name       string `bson:"name"`
+		Status     string `bson:"status"`
+	}
+
+	connect := New(os.Getenv("MONGO_URI"))
+	model := NewModel[Task](connect, "tasks")
+	firstOne, err := model.FindOne(nil)
+	require.Nil(t, err)
+
+	if firstOne != nil {
+		_, err := model.FindByIDAndDelete(firstOne.ID.Hex())
+		require.Nil(t, err)
+	}
+
+	type QueryID struct {
+		ID primitive.ObjectID `bson:"_id"`
+	}
+
+	data, err := model.FindOne(&QueryID{
+		ID: firstOne.ID,
+	})
+	require.Nil(t, err)
+	require.Nil(t, data)
 }

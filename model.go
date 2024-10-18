@@ -79,7 +79,7 @@ func (m *Model[M]) Save() error {
 		id := m.docs[idIndex].Value
 		updates := append(m.docs[:idIndex], m.docs[idIndex+1:]...)
 		updates = append(updates, bson.E{Key: "updatedAt", Value: time.Now()})
-		_, err := m.Collection.UpdateByID(m.Ctx, id, updates)
+		_, err := m.Collection.UpdateByID(m.Ctx, id, bson.D{{Key: "$set", Value: updates}})
 		if err != nil {
 			return err
 		}
