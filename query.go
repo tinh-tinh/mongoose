@@ -128,3 +128,81 @@ func (m *Model[M]) Count(filter interface{}) (int64, error) {
 
 	return m.Collection.CountDocuments(m.Ctx, query)
 }
+
+func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options.FindOneAndUpdateOptions) (*M, error) {
+	query, err := ToDoc(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	upsert := m.validData(data, "update")
+
+	var model M
+	err = m.Collection.FindOneAndUpdate(m.Ctx, query, bson.D{{Key: "$set", Value: upsert}}, opt...).Decode(&model)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (m *Model[M]) FindByIDAndUpdate(id string, data *M, opt ...*options.FindOneAndUpdateOptions) (*M, error) {
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	query := bson.M{"_id": objId}
+	return m.FindOneAndUpdate(query, data, opt...)
+}
+
+func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneAndDeleteOptions) (*M, error) {
+	query, err := ToDoc(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var model M
+	err = m.Collection.FindOneAndDelete(m.Ctx, query, opt...).Decode(&model)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (m *Model[M]) FindByIDAndDelete(id string, opt ...*options.FindOneAndDeleteOptions) (*M, error) {
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	query := bson.M{"_id": objId}
+	return m.FindOneAndDelete(query, opt...)
+}
+
+func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*options.FindOneAndReplaceOptions) (*M, error) {
+	query, err := ToDoc(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	update := m.validData(data, "replace")
+	var model M
+	err = m.Collection.FindOneAndReplace(m.Ctx, query, update, opt...).Decode(&model)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (m *Model[M]) FindByIDAndReplace(id string, data *M, opt ...*options.FindOneAndReplaceOptions) (*M, error) {
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	query := bson.M{"_id": objId}
+	return m.FindOneAndReplace(query, data, opt...)
+}
