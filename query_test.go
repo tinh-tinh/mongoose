@@ -277,17 +277,17 @@ func Test_FindByIDAndDelete(t *testing.T) {
 	require.Nil(t, err)
 
 	if firstOne != nil {
-		_, err := model.FindByIDAndDelete(firstOne.ID.Hex())
+		found, err := model.FindByIDAndDelete(firstOne.ID.Hex())
 		require.Nil(t, err)
-	}
 
-	type QueryID struct {
-		ID primitive.ObjectID `bson:"_id"`
-	}
+		type QueryID struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
 
-	data, err := model.FindOne(&QueryID{
-		ID: firstOne.ID,
-	})
-	require.Nil(t, err)
-	require.Nil(t, data)
+		data, err := model.FindOne(&QueryID{
+			ID: found.ID,
+		})
+		require.Nil(t, err)
+		require.Nil(t, data)
+	}
 }
