@@ -17,7 +17,7 @@ func Test_Find(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	data, err := model.Find(&QueryTask{
 		Name: "haha",
@@ -35,7 +35,7 @@ func Test_FindOne(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	data, err := model.FindOne(&QueryTask{
 		Name: "lulu",
@@ -61,7 +61,7 @@ func Test_FindByID(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -76,7 +76,7 @@ func Test_FindByID(t *testing.T) {
 }
 
 func Test_FindOptions(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 
 	type Course struct {
 		BaseSchema `bson:"inline"`
@@ -138,7 +138,7 @@ func Test_FindOneAndUpdate(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -167,7 +167,7 @@ func Test_FindByIDAndUpdate(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -193,7 +193,7 @@ func Test_FindOneAndReplace(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -221,7 +221,7 @@ func Test_FindByIDAndReplace(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -247,7 +247,7 @@ func Test_FindOneAndDelete(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -271,7 +271,7 @@ func Test_FindByIDAndDelete(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
