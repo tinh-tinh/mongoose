@@ -1,34 +1,30 @@
-package mongoose
+package tenancy_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tinh-tinh/mongoose"
+	"github.com/tinh-tinh/mongoose/tenancy"
 	"github.com/tinh-tinh/tinhtinh/common"
 	"github.com/tinh-tinh/tinhtinh/core"
 )
 
 func Test_Module(t *testing.T) {
 	type Book struct {
-		BaseSchema `bson:"inline"`
-		Title      string `bson:"title"`
-		Author     string `bson:"author"`
+		mongoose.BaseSchema `bson:"inline"`
+		Title               string `bson:"title"`
+		Author              string `bson:"author"`
 	}
 
 	bookController := func(module *core.DynamicModule) *core.DynamicController {
 		ctrl := module.NewController("books")
 
-		ctrl.Get("connect", func(ctx core.Ctx) error {
-			connect := InjectConnect(module)
-			return ctx.JSON(core.Map{
-				"data": connect,
-			})
-		})
-
 		ctrl.Post("", func(ctx core.Ctx) error {
-			service := InjectModel[Book](module)
+			service := tenancy.InjectModel[Book](module)
 			data, err := service.Create(&Book{
 				Title:  "The Catcher in the Rye",
 				Author: "J. D. Salinger",
@@ -43,23 +39,14 @@ func Test_Module(t *testing.T) {
 			})
 		})
 
-		ctrl.Get("", func(ctx core.Ctx) error {
-			service := InjectModel[Book](module)
-			data, err := service.Find(nil)
-			if err != nil {
-				return common.InternalServerException(ctx.Res(), err.Error())
-			}
-
-			return ctx.JSON(core.Map{
-				"data": data,
-			})
-		})
-
 		return ctrl
 	}
 
 	bookModule := func(module *core.DynamicModule) *core.DynamicModule {
 		bookMod := module.New(core.NewModuleOptions{
+			Imports: []core.Module{
+				tenancy.ForFeature[Book](),
+			},
 			Controllers: []core.Controller{bookController},
 		})
 
@@ -69,7 +56,12 @@ func Test_Module(t *testing.T) {
 	appModule := func() *core.DynamicModule {
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Module{
-				ForRoot(os.Getenv("MONGO_URI"), "test"),
+				tenancy.ForRoot(tenancy.Options{
+					GetTenantID: func(r *http.Request) string {
+						return r.Header.Get("x-tenant-id")
+					},
+					Uri: os.Getenv("MONGO_URI"),
+				}),
 				bookModule,
 			},
 		})
@@ -85,15 +77,21 @@ func Test_Module(t *testing.T) {
 
 	testClient := testServer.Client()
 
-	resp, err := testClient.Post(testServer.URL+"/app/books", "application/json", nil)
+	req, err := http.NewRequest("POST", testServer.URL+"/app/books", nil)
+	require.Nil(t, err)
+
+	req.Header.Set("x-tenant-id", "anc")
+
+	resp, err := testClient.Do(req)
 	require.Nil(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
-	resp, err = testClient.Get(testServer.URL + "/app/books")
+	req, err = http.NewRequest("POST", testServer.URL+"/app/books", nil)
 	require.Nil(t, err)
-	require.Equal(t, 200, resp.StatusCode)
 
-	resp, err = testClient.Get(testServer.URL + "/app/books/connect")
+	req.Header.Set("x-tenant-id", "xyz")
+
+	resp, err = testClient.Do(req)
 	require.Nil(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 }

@@ -3,7 +3,6 @@ package mongoose
 import (
 	"context"
 	"log"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,8 +18,7 @@ type Connect struct {
 // database using the provided URI. It returns a pointer to the Connect struct,
 // which contains the MongoDB client, context, and the database name extracted
 // from the URI. If the connection fails, the function will panic.
-func New(url string) *Connect {
-	uri := strings.Split(url, "/")
+func New(url string, db string) *Connect {
 	opt := options.Client().ApplyURI(url)
 	ctx := context.TODO()
 
@@ -34,7 +32,7 @@ func New(url string) *Connect {
 	return &Connect{
 		Client: client,
 		Ctx:    ctx,
-		DB:     uri[len(uri)-1],
+		DB:     db,
 	}
 }
 

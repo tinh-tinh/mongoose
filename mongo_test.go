@@ -8,7 +8,7 @@ import (
 )
 
 func Test_Connect(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	err := connect.Ping()
 	require.Nil(t, err)
 }

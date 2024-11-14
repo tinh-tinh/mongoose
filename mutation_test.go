@@ -14,7 +14,7 @@ func Test_Create(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	_, err := model.Create(&Task{
 		Name:   "haha",
@@ -30,7 +30,7 @@ func Test_CreateMany(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	_, err := model.CreateMany([]*Task{
 		{
@@ -56,7 +56,7 @@ func Test_UpdateOne(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -84,7 +84,7 @@ func Test_UpdateMany(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	err := model.UpdateMany(&QueryTask{
 		Name: "haha",
@@ -101,7 +101,7 @@ func Test_DeleteOne(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	err := model.Delete(&QueryTask{
 		Name: "huuhuhu",
@@ -116,7 +116,7 @@ func Test_DeleteMany(t *testing.T) {
 		Status     string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Task](connect, "tasks")
 	err := model.DeleteMany(&QueryTask{
 		Name: "lulu",

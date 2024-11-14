@@ -15,7 +15,7 @@ func Test_Model(t *testing.T) {
 		Author     string `bson:"author"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Book](connect, "books")
 
 	type UpdateBook struct {
@@ -34,7 +34,7 @@ func Test_Update(t *testing.T) {
 		Author     string `bson:"author"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Book](connect, "books")
 
 	type UpdateBook struct {
@@ -70,7 +70,7 @@ func Test_Recusive(t *testing.T) {
 		Address    *Address `bson:"address"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"))
+	connect := New(os.Getenv("MONGO_URI"), "test")
 	model := NewModel[Location](connect, "locations")
 	_, err := model.Create(&Location{
 		Longitude: 1,
