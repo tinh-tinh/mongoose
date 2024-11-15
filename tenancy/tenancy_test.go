@@ -25,6 +25,9 @@ func Test_Module(t *testing.T) {
 
 		ctrl.Post("", func(ctx core.Ctx) error {
 			service := tenancy.InjectModel[Book](module)
+			if service == nil {
+				return common.InternalServerException(ctx.Res(), "service is nil")
+			}
 			data, err := service.Create(&Book{
 				Title:  "The Catcher in the Rye",
 				Author: "J. D. Salinger",
@@ -45,7 +48,7 @@ func Test_Module(t *testing.T) {
 	bookModule := func(module *core.DynamicModule) *core.DynamicModule {
 		bookMod := module.New(core.NewModuleOptions{
 			Imports: []core.Module{
-				tenancy.ForFeature[Book](),
+				tenancy.ForFeature(mongoose.NewModel[Book]()),
 			},
 			Controllers: []core.Controller{bookController},
 		})
@@ -84,7 +87,7 @@ func Test_Module(t *testing.T) {
 
 	resp, err := testClient.Do(req)
 	require.Nil(t, err)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	req, err = http.NewRequest("POST", testServer.URL+"/app/books", nil)
 	require.Nil(t, err)
@@ -93,5 +96,5 @@ func Test_Module(t *testing.T) {
 
 	resp, err = testClient.Do(req)
 	require.Nil(t, err)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

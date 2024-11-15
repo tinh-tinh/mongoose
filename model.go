@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/tinh-tinh/tinhtinh/common"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,7 +23,13 @@ type BaseTimestamp struct {
 	UpdatedAt time.Time `bson:"updatedAt"`
 }
 
+type ModelCommon interface {
+	SetConnect(connect *Connect)
+	GetName() string
+}
+
 type Model[M any] struct {
+	name       string
 	docs       []bson.E
 	Ctx        context.Context
 	Collection *mongo.Collection
@@ -31,11 +38,26 @@ type Model[M any] struct {
 // NewModel returns a new instance of Model[M] with the given connect and name
 // name is the name of the collection in the database
 // the returned Model[M] is used to interact with the collection in the database
-func NewModel[M any](connect *Connect, name string) *Model[M] {
-	return &Model[M]{
-		Ctx:        connect.Ctx,
-		Collection: connect.Client.Database(connect.DB).Collection(name),
+func NewModel[M any](names ...string) *Model[M] {
+	var name string
+	if len(names) > 0 {
+		name = names[0]
+	} else {
+		var model M
+		name = common.GetStructName(model)
 	}
+	return &Model[M]{
+		name: name,
+	}
+}
+
+func (m *Model[M]) SetConnect(connect *Connect) {
+	m.Ctx = connect.Ctx
+	m.Collection = connect.Client.Database(connect.DB).Collection(m.name)
+}
+
+func (m *Model[M]) GetName() string {
+	return m.name
 }
 
 // Set sets the data of the model to the given data.

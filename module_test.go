@@ -60,6 +60,7 @@ func Test_Module(t *testing.T) {
 
 	bookModule := func(module *core.DynamicModule) *core.DynamicModule {
 		bookMod := module.New(core.NewModuleOptions{
+			Imports:     []core.Module{ForFeature(NewModel[Book]())},
 			Controllers: []core.Controller{bookController},
 		})
 
