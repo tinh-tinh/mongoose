@@ -22,6 +22,28 @@ func ForRoot(url string, db string) core.Module {
 	}
 }
 
+func ForFeature(models ...ModelCommon) core.Module {
+	return func(module *core.DynamicModule) *core.DynamicModule {
+		modelModule := module.New(core.NewModuleOptions{})
+
+		for _, m := range models {
+			modelModule.NewProvider(core.ProviderOptions{
+				Name: GetModelName(m.GetName()),
+				Factory: func(param ...interface{}) interface{} {
+					connect := param[0].(*Connect)
+					m.SetConnect(connect)
+
+					return m
+				},
+				Inject: []core.Provide{CONNECT_MONGO},
+			})
+			modelModule.Export(GetModelName(m.GetName()))
+		}
+
+		return modelModule
+	}
+}
+
 // GetModelName returns a unique name for a model provider given a struct name.
 // The returned name is in the format "Model_<struct_name>".
 func GetModelName(name string) core.Provide {
@@ -54,13 +76,8 @@ func InjectModel[M any](module *core.DynamicModule, name ...string) *Model[M] {
 		modelName = common.GetStructName(&m)
 	}
 	data, ok := module.Ref(GetModelName(modelName)).(*Model[M])
-	if !ok || data == nil {
-		model := NewModel[M](InjectConnect(module), modelName)
-		module.NewProvider(core.ProviderOptions{
-			Name:  GetModelName(modelName),
-			Value: model,
-		})
-		return model
+	if !ok {
+		return nil
 	}
 
 	return data

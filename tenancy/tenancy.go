@@ -9,8 +9,6 @@ import (
 	"github.com/tinh-tinh/tinhtinh/core"
 )
 
-const TENANCY core.Provide = "TENANCY"
-
 type Options struct {
 	Uri         string
 	GetTenantID func(r *http.Request) string
@@ -41,7 +39,7 @@ func ForRoot(opt Options) core.Module {
 
 		tenancyModule.NewProvider(core.ProviderOptions{
 			Scope: core.Request,
-			Name:  TENANCY,
+			Name:  CONNECT_TENANCY,
 			Factory: func(param ...interface{}) interface{} {
 				req := param[0].(*http.Request)
 				tenantId := opt.GetTenantID(req)
@@ -59,33 +57,29 @@ func ForRoot(opt Options) core.Module {
 			},
 			Inject: []core.Provide{core.REQUEST, CONNECT_MAPPER},
 		})
-		tenancyModule.Export(TENANCY)
+		tenancyModule.Export(CONNECT_TENANCY)
 		return tenancyModule
 	}
 }
 
-func ForFeature[M any](name ...string) core.Module {
-	var m M
-	var modelName string
-	if len(name) > 0 {
-		modelName = name[0]
-	} else {
-		modelName = common.GetStructName(&m)
-	}
+func ForFeature(models ...mongoose.ModelCommon) core.Module {
 	return func(module *core.DynamicModule) *core.DynamicModule {
-		modelModule := module.New(core.NewModuleOptions{})
-		modelModule.NewProvider(core.ProviderOptions{
-			Scope: core.Request,
-			Name:  mongoose.GetModelName(modelName),
-			Factory: func(param ...interface{}) interface{} {
-				connect := param[0].(*mongoose.Connect)
-				model := mongoose.NewModel[M](connect, modelName)
-				return model
-			},
-			Inject: []core.Provide{TENANCY},
-		})
+		modelModule := module.New(core.NewModuleOptions{Scope: core.Global})
+		for _, m := range models {
+			modelModule.NewProvider(core.ProviderOptions{
+				Scope: core.Request,
+				Name:  mongoose.GetModelName(m.GetName()),
+				Factory: func(param ...interface{}) interface{} {
+					connect := param[0].(*mongoose.Connect)
+					m.SetConnect(connect)
 
-		modelModule.Export(mongoose.GetModelName(modelName))
+					return m
+				},
+				Inject: []core.Provide{CONNECT_TENANCY},
+			})
+			modelModule.Export(mongoose.GetModelName(m.GetName()))
+		}
+
 		return modelModule
 	}
 }
