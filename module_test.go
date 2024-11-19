@@ -16,6 +16,7 @@ func Test_Module(t *testing.T) {
 		Title      string `bson:"title"`
 		Author     string `bson:"author"`
 	}
+	bookModel := NewModel[Book]()
 
 	bookController := func(module *core.DynamicModule) *core.DynamicController {
 		ctrl := module.NewController("books")
@@ -60,7 +61,7 @@ func Test_Module(t *testing.T) {
 
 	bookModule := func(module *core.DynamicModule) *core.DynamicModule {
 		bookMod := module.New(core.NewModuleOptions{
-			Imports:     []core.Module{ForFeature(NewModel[Book]())},
+			Imports:     []core.Module{ForFeature(bookModel)},
 			Controllers: []core.Controller{bookController},
 		})
 
