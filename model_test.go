@@ -1,22 +1,24 @@
-package mongoose
+package mongoose_test
 
 import (
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tinh-tinh/mongoose"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_Model(t *testing.T) {
 	type Book struct {
-		BaseSchema `bson:"inline"`
-		Title      string `bson:"title"`
-		Author     string `bson:"author"`
+		mongoose.BaseSchema `bson:"inline"`
+		Title               string `bson:"title"`
+		Author              string `bson:"author"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Book]("books")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Book]("books")
 	model.SetConnect(connect)
 
 	type UpdateBook struct {
@@ -30,13 +32,13 @@ func Test_Model(t *testing.T) {
 
 func Test_Update(t *testing.T) {
 	type Book struct {
-		BaseSchema `bson:"inline"`
-		Title      string `bson:"title"`
-		Author     string `bson:"author"`
+		mongoose.BaseSchema `bson:"inline"`
+		Title               string `bson:"title"`
+		Author              string `bson:"author"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Book]("books")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Book]("books")
 	model.SetConnect(connect)
 
 	type UpdateBook struct {
@@ -66,14 +68,14 @@ func Test_Recusive(t *testing.T) {
 	}
 
 	type Location struct {
-		BaseSchema `bson:"inline"`
-		Longitude  float64  `bson:"longitude"`
-		Latitude   float64  `bson:"latitude"`
-		Address    *Address `bson:"address"`
+		mongoose.BaseSchema `bson:"inline"`
+		Longitude           float64  `bson:"longitude"`
+		Latitude            float64  `bson:"latitude"`
+		Address             *Address `bson:"address"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Location]("locations")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Location]("locations")
 	model.SetConnect(connect)
 	_, err := model.Create(&Location{
 		Longitude: 1,
@@ -98,4 +100,17 @@ func Test_Recusive(t *testing.T) {
 		},
 	})
 	require.Nil(t, err)
+}
+
+func TestIndex(t *testing.T) {
+	type User struct {
+		mongoose.BaseSchema `bson:"inline"`
+		Email               string `bson:"email"`
+		Name                string `bson:"name"`
+	}
+	userModel := mongoose.NewModel[User]("users")
+	userModel.Index(bson.D{{"email", 1}}, true)
+
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	userModel.SetConnect(connect)
 }

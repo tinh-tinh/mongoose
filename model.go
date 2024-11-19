@@ -2,6 +2,7 @@ package mongoose
 
 import (
 	"context"
+	"log"
 	"reflect"
 	"slices"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type BaseSchema struct {
@@ -31,6 +33,7 @@ type ModelCommon interface {
 type Model[M any] struct {
 	name       string
 	docs       []bson.E
+	idx        mongo.IndexModel
 	Ctx        context.Context
 	Collection *mongo.Collection
 }
@@ -57,11 +60,29 @@ func NewModel[M any](names ...string) *Model[M] {
 func (m *Model[M]) SetConnect(connect *Connect) {
 	m.Ctx = connect.Ctx
 	m.Collection = connect.Client.Database(connect.DB).Collection(m.name)
+	if !reflect.ValueOf(m.idx).IsZero() {
+		_, err := m.Collection.Indexes().CreateOne(m.Ctx, m.idx)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }
 
 // GetName returns the name of the collection in the database
 func (m *Model[M]) GetName() string {
 	return m.name
+}
+
+func (m *Model[M]) Index(idx bson.D, unique bool) {
+	indexModel := mongo.IndexModel{
+		Keys:    idx,
+		Options: options.Index().SetUnique(unique),
+	}
+	m.idx = indexModel
+	// _, err := m.Collection.Indexes().CreateOne(m.Ctx, indexModel)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 }
 
 // Set sets the data of the model to the given data.
