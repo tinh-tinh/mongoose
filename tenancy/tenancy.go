@@ -21,6 +21,11 @@ const (
 
 type ConnectMapper map[string]*mongoose.Connect
 
+// CreateConnectMapper creates a provider named CONNECT_MAPPER which is a map of
+// tenant_id to *mongoose.Connect. The map is used to store the connection to the
+// database for each tenant. The provider is created by the ForRoot function and
+// is used by the ForFeature function to inject the connection of the tenant to the
+// model.
 func CreateConnectMapper(module *core.DynamicModule) *core.DynamicProvider {
 	prd := module.NewProvider(core.ProviderOptions{
 		Name:  CONNECT_MAPPER,
@@ -29,6 +34,13 @@ func CreateConnectMapper(module *core.DynamicModule) *core.DynamicProvider {
 
 	return prd
 }
+
+// ForRoot creates a module that manages tenant-specific MongoDB connections.
+// It utilizes the provided Options to extract the tenant ID from each HTTP request
+// and maintain connections in a ConnectMapper. The function creates the CONNECT_MAPPER
+// provider to store these connections, and the CONNECT_TENANCY provider to inject
+// tenant-specific connections into the models. This setup allows each tenant to have
+// a dedicated MongoDB connection based on their tenant ID.
 
 func ForRoot(opt Options) core.Module {
 	return func(module *core.DynamicModule) *core.DynamicModule {
@@ -62,6 +74,10 @@ func ForRoot(opt Options) core.Module {
 	}
 }
 
+// ForFeature creates a module which provides each model in the given list as a provider.
+// The provider of each model is created by calling its SetConnect method with the CONNECT_TENANCY
+// provider. The name of the provider is the same as the name of the collection, but with "Model_"
+// prefixed. The providers are exported by the module.
 func ForFeature(models ...mongoose.ModelCommon) core.Module {
 	return func(module *core.DynamicModule) *core.DynamicModule {
 		modelModule := module.New(core.NewModuleOptions{Scope: core.Global})
@@ -84,6 +100,10 @@ func ForFeature(models ...mongoose.ModelCommon) core.Module {
 	}
 }
 
+// InjectModel injects a model provider and returns its value as a *Model[M].
+// The model provider is created by the ForFeature function.
+// The name of the provider is the same as the name of the struct,
+// but with "Model_" prefixed.
 func InjectModel[M any](module *core.DynamicModule, name ...string) *mongoose.Model[M] {
 	var m M
 	var modelName string

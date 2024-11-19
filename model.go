@@ -51,11 +51,15 @@ func NewModel[M any](names ...string) *Model[M] {
 	}
 }
 
+// SetConnect sets the context and collection of the model to the given connect.
+// It is used internally by the ForFeature function to set the connect of the model.
+// The given connect must be a *Connect.
 func (m *Model[M]) SetConnect(connect *Connect) {
 	m.Ctx = connect.Ctx
 	m.Collection = connect.Client.Database(connect.DB).Collection(m.name)
 }
 
+// GetName returns the name of the collection in the database
 func (m *Model[M]) GetName() string {
 	return m.name
 }

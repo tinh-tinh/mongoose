@@ -22,6 +22,10 @@ func ForRoot(url string, db string) core.Module {
 	}
 }
 
+// ForFeature creates a module which provides each model in the given list as a provider.
+// The provider of each model is created by calling its SetConnect method with the CONNECT_MONGO
+// provider. The name of the provider is the same as the name of the collection, but with "Model_"
+// prefixed. The providers are exported by the module.
 func ForFeature(models ...ModelCommon) core.Module {
 	return func(module *core.DynamicModule) *core.DynamicModule {
 		modelModule := module.New(core.NewModuleOptions{})
