@@ -152,6 +152,10 @@ func (m *Model[M]) validData(data *M, mutation string) []bson.E {
 					UpdatedAt: time.Now(),
 				}))
 			}
+			// tagRef := field.Tag.Get("ref")
+			// if tagRef != "" {
+			// 	ct.FieldByName(name).Set(reflect.ValueOf(nil))
+			// }
 		}
 	} else {
 		if mutation == "replace" {
