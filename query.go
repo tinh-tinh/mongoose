@@ -3,13 +3,13 @@ package mongoose
 import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type QueryOptions struct {
 	Sort       bson.D
 	Projection bson.D
+	Ref        []string
 }
 
 type QueriesOptions struct {
@@ -17,6 +17,7 @@ type QueriesOptions struct {
 	Skip       int64
 	Limit      int64
 	Projection bson.D
+	Ref        []string
 }
 
 // ParseFindOneOptions converts a QueryOptions to a *options.FindOneOptions.
@@ -24,17 +25,17 @@ type QueriesOptions struct {
 // The QueryOptions can have a Projection or Sort set. If the Projection is
 // non-nil, it is passed to the FindOneOptions.SetProjection method. If the Sort
 // is non-nil, it is passed to the FindOneOptions.SetSort method.
-func ParseFindOneOptions(opt QueryOptions) *options.FindOneOptions {
-	opts := options.FindOne()
-	if opt.Projection != nil {
-		opts.SetProjection(opt.Projection)
-	}
-	if opt.Sort != nil {
-		opts.SetSort(opt.Sort)
-	}
+// func ParseFindOneOptions(opt QueryOptions) *options.FindOneOptions {
+// 	opts := options.FindOne()
+// 	if opt.Projection != nil {
+// 		opts.SetProjection(opt.Projection)
+// 	}
+// 	if opt.Sort != nil {
+// 		opts.SetSort(opt.Sort)
+// 	}
 
-	return opts
-}
+// 	return opts
+// }
 
 // ParseFindOptions converts a QueriesOptions to a *options.FindOptions.
 //
@@ -43,23 +44,23 @@ func ParseFindOneOptions(opt QueryOptions) *options.FindOneOptions {
 // If the Sort is non-nil, it is passed to the FindOptions.SetSort method. If
 // the Skip is non-zero, it is passed to the FindOptions.SetSkip method. If the
 // Limit is non-zero, it is passed to the FindOptions.SetLimit method.
-func ParseFindOptions(opt QueriesOptions) *options.FindOptions {
-	opts := options.Find()
-	if opt.Sort != nil {
-		opts.SetSort(opt.Sort)
-	}
-	if opt.Projection != nil {
-		opts.SetProjection(opt.Projection)
-	}
-	if opt.Skip != 0 {
-		opts.SetSkip(opt.Skip)
-	}
-	if opt.Limit != 0 {
-		opts.SetLimit(opt.Limit)
-	}
+// func ParseFindOptions(opt QueriesOptions) *options.FindOptions {
+// 	opts := options.Find()
+// 	if opt.Sort != nil {
+// 		opts.SetSort(opt.Sort)
+// 	}
+// 	if opt.Projection != nil {
+// 		opts.SetProjection(opt.Projection)
+// 	}
+// 	if opt.Skip != 0 {
+// 		opts.SetSkip(opt.Skip)
+// 	}
+// 	if opt.Limit != 0 {
+// 		opts.SetLimit(opt.Limit)
+// 	}
 
-	return opts
-}
+// 	return opts
+// }
 
 // Find returns a slice of documents that match the filter. The filter can be any
 // type that can be marshaled to a bson.D. The function takes a variable number
@@ -68,41 +69,41 @@ func ParseFindOptions(opt QueriesOptions) *options.FindOptions {
 //
 // Find returns an error if there is a problem with the query or the documents
 // cannot be decoded.
-func (m *Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error) {
-	var data []*M
+// func (m *Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error) {
+// 	var data []*M
 
-	query, err := ToDoc(filter)
-	if err != nil {
-		return data, err
-	}
+// 	query, err := ToDoc(filter)
+// 	if err != nil {
+// 		return data, err
+// 	}
 
-	opts := []*options.FindOptions{}
-	for i := 0; i < len(opt); i++ {
-		opts = append(opts, ParseFindOptions(opt[i]))
-	}
+// 	opts := []*options.FindOptions{}
+// 	for i := 0; i < len(opt); i++ {
+// 		opts = append(opts, ParseFindOptions(opt[i]))
+// 	}
 
-	cur, err := m.Collection.Find(m.Ctx, query, opts...)
-	if err != nil {
-		return data, err
-	}
+// 	cur, err := m.Collection.Find(m.Ctx, query, opts...)
+// 	if err != nil {
+// 		return data, err
+// 	}
 
-	for cur.Next(m.Ctx) {
-		var t M
-		err := cur.Decode(&t)
-		if err != nil {
-			return data, err
-		}
-		data = append(data, &t)
-	}
+// 	for cur.Next(m.Ctx) {
+// 		var t M
+// 		err := cur.Decode(&t)
+// 		if err != nil {
+// 			return data, err
+// 		}
+// 		data = append(data, &t)
+// 	}
 
-	if err := cur.Err(); err != nil {
-		return data, err
-	}
+// 	if err := cur.Err(); err != nil {
+// 		return data, err
+// 	}
 
-	cur.Close(m.Ctx)
+// 	cur.Close(m.Ctx)
 
-	return data, nil
-}
+// 	return data, nil
+// }
 
 // FindOne returns a single document that matches the filter. The filter can be
 // any type that can be marshaled to a bson.D. The function takes a variable
@@ -113,29 +114,29 @@ func (m *Model[M]) Find(filter interface{}, opt ...QueriesOptions) ([]*M, error)
 // FindOne returns an error if there is a problem with the query or the document
 // cannot be decoded. If no document matches the filter, the function returns
 // nil, nil.
-func (m *Model[M]) FindOne(filter interface{}, opt ...QueryOptions) (*M, error) {
-	var data M
+// func (m *Model[M]) FindOne(filter interface{}, opt ...QueryOptions) (*M, error) {
+// 	var data M
 
-	query, err := ToDoc(filter)
-	if err != nil {
-		return nil, err
-	}
+// 	query, err := ToDoc(filter)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	opts := []*options.FindOneOptions{}
-	for i := 0; i < len(opt); i++ {
-		opts = append(opts, ParseFindOneOptions(opt[i]))
-	}
+// 	opts := []*options.FindOneOptions{}
+// 	for i := 0; i < len(opt); i++ {
+// 		opts = append(opts, ParseFindOneOptions(opt[i]))
+// 	}
 
-	err = m.Collection.FindOne(m.Ctx, query, opts...).Decode(&data)
-	if err != nil && err != mongo.ErrNoDocuments {
-		return nil, err
-	}
-	if err == mongo.ErrNoDocuments {
-		return nil, nil
-	}
+// 	err = m.Collection.FindOne(m.Ctx, query, opts...).Decode(&data)
+// 	if err != nil && err != mongo.ErrNoDocuments {
+// 		return nil, err
+// 	}
+// 	if err == mongo.ErrNoDocuments {
+// 		return nil, nil
+// 	}
 
-	return &data, nil
-}
+// 	return &data, nil
+// }
 
 // FindByID returns a single document that matches the id. The id is the
 // "_id" field in the document. The function takes a variable number of

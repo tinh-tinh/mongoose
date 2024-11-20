@@ -1,4 +1,4 @@
-package mongoose
+package mongoose_test
 
 import (
 	"fmt"
@@ -6,19 +6,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tinh-tinh/mongoose"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Test_Find(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	data, err := model.Find(&QueryTask{
 		Name: "haha",
@@ -31,13 +32,13 @@ func Test_Find(t *testing.T) {
 
 func Test_FindOne(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	data, err := model.FindOne(&QueryTask{
 		Name: "lulu",
@@ -58,13 +59,13 @@ func Test_FindOne(t *testing.T) {
 
 func Test_FindByID(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -79,15 +80,15 @@ func Test_FindByID(t *testing.T) {
 }
 
 func Test_FindOptions(t *testing.T) {
-	connect := New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
 
 	type Course struct {
-		BaseSchema `bson:"inline"`
-		Title      string `bson:"title"`
-		Enrollment int    `bson:"enrollment"`
-		CourseId   string `bson:"course_id"`
+		mongoose.BaseSchema `bson:"inline"`
+		Title               string `bson:"title"`
+		Enrollment          int    `bson:"enrollment"`
+		CourseId            string `bson:"course_id"`
 	}
-	model := NewModel[Course]("courses")
+	model := mongoose.NewModel[Course]("courses")
 	model.SetConnect(connect)
 	count, err := model.Count(nil)
 	require.Nil(t, err)
@@ -101,7 +102,7 @@ func Test_FindOptions(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	data, err := model.FindOne(nil, QueryOptions{
+	data, err := model.FindOne(nil, mongoose.QueryOptions{
 		Sort: bson.D{{Key: "enrollment", Value: -1}},
 		Projection: bson.D{
 			{Key: "title", Value: 1},
@@ -116,7 +117,7 @@ func Test_FindOptions(t *testing.T) {
 		require.Equal(t, int(60), data.Enrollment)
 	}
 
-	list, err := model.Find(nil, QueriesOptions{
+	list, err := model.Find(nil, mongoose.QueriesOptions{
 		Sort:  bson.D{{Key: "enrollment", Value: -1}},
 		Limit: 2,
 		Skip:  2,
@@ -136,13 +137,13 @@ func Test_FindOptions(t *testing.T) {
 
 func Test_FindOneAndUpdate(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -166,13 +167,13 @@ func Test_FindOneAndUpdate(t *testing.T) {
 
 func Test_FindByIDAndUpdate(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -189,17 +190,20 @@ func Test_FindByIDAndUpdate(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, "vcl", reFirst.Status)
 	}
+
+	_, err = model.FindByIDAndUpdate("abc", nil)
+	require.NotNil(t, err)
 }
 
 func Test_FindOneAndReplace(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -222,13 +226,13 @@ func Test_FindOneAndReplace(t *testing.T) {
 
 func Test_FindByIDAndReplace(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -245,17 +249,20 @@ func Test_FindByIDAndReplace(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, "lulu", reFirst.Name)
 	}
+
+	_, err = model.FindByIDAndReplace("abc", nil)
+	require.NotNil(t, err)
 }
 
 func Test_FindOneAndDelete(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("tasks")
 	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
@@ -274,14 +281,21 @@ func Test_FindOneAndDelete(t *testing.T) {
 
 func Test_FindByIDAndDelete(t *testing.T) {
 	type Task struct {
-		BaseSchema `bson:"inline"`
-		Name       string `bson:"name"`
-		Status     string `bson:"status"`
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+		Status              string `bson:"status"`
 	}
 
-	connect := New(os.Getenv("MONGO_URI"), "test")
-	model := NewModel[Task]("tasks")
+	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	model := mongoose.NewModel[Task]("task1s")
 	model.SetConnect(connect)
+
+	_, err := model.Create(&Task{
+		Name:   "haha",
+		Status: "true",
+	})
+	require.Nil(t, err)
+
 	firstOne, err := model.FindOne(nil)
 	require.Nil(t, err)
 
@@ -299,4 +313,7 @@ func Test_FindByIDAndDelete(t *testing.T) {
 		require.Nil(t, err)
 		require.Nil(t, data)
 	}
+
+	_, err = model.FindByIDAndDelete("abc")
+	require.NotNil(t, err)
 }
