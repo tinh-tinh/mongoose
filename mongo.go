@@ -18,8 +18,11 @@ type Connect struct {
 // database using the provided URI. It returns a pointer to the Connect struct,
 // which contains the MongoDB client, context, and the database name extracted
 // from the URI. If the connection fails, the function will panic.
-func New(url string, db string) *Connect {
+func New(url string, db string, loggers ...*options.LoggerOptions) *Connect {
 	opt := options.Client().ApplyURI(url)
+	if len(loggers) > 0 {
+		opt.SetLoggerOptions(loggers[0])
+	}
 	ctx := context.TODO()
 
 	client, err := mongo.Connect(ctx, opt)
