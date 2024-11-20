@@ -33,6 +33,7 @@ type ModelCommon interface {
 type Model[M any] struct {
 	name       string
 	docs       []bson.E
+	connect    *Connect
 	idx        mongo.IndexModel
 	Ctx        context.Context
 	Collection *mongo.Collection
@@ -59,6 +60,7 @@ func NewModel[M any](names ...string) *Model[M] {
 // The given connect must be a *Connect.
 func (m *Model[M]) SetConnect(connect *Connect) {
 	m.Ctx = connect.Ctx
+	m.connect = connect
 	m.Collection = connect.Client.Database(connect.DB).Collection(m.name)
 	if !reflect.ValueOf(m.idx).IsZero() {
 		_, err := m.Collection.Indexes().CreateOne(m.Ctx, m.idx)
@@ -66,6 +68,10 @@ func (m *Model[M]) SetConnect(connect *Connect) {
 			log.Println(err)
 		}
 	}
+}
+
+func (m *Model[M]) SetContext(ctx context.Context) {
+	m.Ctx = ctx
 }
 
 // GetName returns the name of the collection in the database
