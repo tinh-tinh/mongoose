@@ -104,7 +104,7 @@ func ForFeature(models ...mongoose.ModelCommon) core.Module {
 // The model provider is created by the ForFeature function.
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
-func InjectModel[M any](module *core.DynamicModule, name ...string) *mongoose.Model[M] {
+func InjectModel[M any](module *core.DynamicModule, ctx core.Ctx, name ...string) *mongoose.Model[M] {
 	var m M
 	var modelName string
 	if len(name) > 0 {
@@ -112,7 +112,7 @@ func InjectModel[M any](module *core.DynamicModule, name ...string) *mongoose.Mo
 	} else {
 		modelName = common.GetStructName(&m)
 	}
-	data, ok := module.Ref(mongoose.GetModelName(modelName)).(*mongoose.Model[M])
+	data, ok := module.Ref(mongoose.GetModelName(modelName), ctx).(*mongoose.Model[M])
 	if !ok {
 		return nil
 	}

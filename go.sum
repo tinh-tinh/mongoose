@@ -18,6 +18,8 @@ github.com/tinh-tinh/tinhtinh v1.2.2 h1:jSeal9V7xWmtDv3vm5nE5N/W2qU77L5UHhSSMxgt
 github.com/tinh-tinh/tinhtinh v1.2.2/go.mod h1:Ml1twSfPhVCckxSVPfZxiyLfPs2AM3aQqp4qlGoubrk=
 github.com/tinh-tinh/tinhtinh v1.2.3 h1:+sBhyaAJHqIy4H4fAmJT021XnqI/w/B++WbnY5XZMw4=
 github.com/tinh-tinh/tinhtinh v1.2.3/go.mod h1:Ml1twSfPhVCckxSVPfZxiyLfPs2AM3aQqp4qlGoubrk=
+github.com/tinh-tinh/tinhtinh v1.4.0 h1:Z+nx5gpKJ5o2EWZuB8DFRh+PYwFgIwUeA+SaliYyK7c=
+github.com/tinh-tinh/tinhtinh v1.4.0/go.mod h1:Ml1twSfPhVCckxSVPfZxiyLfPs2AM3aQqp4qlGoubrk=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.1.2 h1:FHX5I5B4i4hKRVRBCFRxq1iQRej7WO3hhBuJf+UUySY=
