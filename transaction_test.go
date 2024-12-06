@@ -23,16 +23,13 @@ func TestTransaction(t *testing.T) {
 		Code string `bson:"code"`
 	}
 
-	model := mongoose.NewModel[Order]("orders")
-	model.Index(bson.D{{"code", 1}}, true)
+	model := mongoose.NewModel[Order]("transactions")
+	model.Index(bson.D{{Key: "code", Value: 1}}, true)
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
 	model.SetConnect(connect)
 
-	// session, err := connect.Client.StartSession()
-	// require.Nil(t, err)
-
-	// defer session.EndSession(connect.Ctx)
+	model.DeleteMany(nil)
 
 	wc := writeconcern.Majority()
 	txnOptions := options.Transaction().SetWriteConcern(wc)
@@ -76,53 +73,4 @@ func TestTransaction(t *testing.T) {
 	}, txnOptions)
 
 	require.NotNil(t, err)
-
-	// result, err := session.WithTransaction(connect.Ctx, func(sessionContext mongo.SessionContext) (interface{}, error) {
-	// 	model.SetContext(sessionContext)
-	// 	model.Create(&Order{
-	// 		Code: "ghi",
-	// 	})
-
-	// 	err := model.Update(nil, &Order{
-	// 		Code: "abc",
-	// 	})
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	result, err := model.FindOne(&QueryOrder{
-	// 		Code: "mno",
-	// 	})
-	// 	return result, err
-	// }, txnOptions)
-	// fmt.Println(err)
-	// fmt.Println(result)
-
-	// err = mongo.WithSession(connect.Ctx, session, func(ctx mongo.SessionContext) error {
-	// 	if err = session.StartTransaction(); err != nil {
-	// 		return err
-	// 	}
-
-	// 	result, _ := model.Create(&Order{
-	// 		Code: "kakfa",
-	// 	})
-
-	// 	err := model.Update(nil, &Order{
-	// 		Code: "mno",
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	if err = session.CommitTransaction(connect.Ctx); err != nil {
-	// 		return err
-	// 	}
-	// 	fmt.Println(result)
-	// 	return nil
-	// })
-
-	// if err != nil {
-	// 	if err = session.AbortTransaction(connect.Ctx); err != nil {
-	// 		return
-	// 	}
-	// }
 }
