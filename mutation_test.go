@@ -4,11 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"github.com/tinh-tinh/mongoose"
 )
 
-func Test_Create(t *testing.T) {
+func Test_Mutation(t *testing.T) {
 	type Task struct {
 		mongoose.BaseSchema `bson:"inline"`
 		Name                string `bson:"name"`
@@ -16,117 +16,83 @@ func Test_Create(t *testing.T) {
 	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
+	model := mongoose.NewModel[Task]("mutations")
 	model.SetConnect(connect)
+
+	// Clear before test
+	model.DeleteMany(nil)
+
+	// TestCreate
 	_, err := model.Create(&Task{
-		Name:   "haha",
+		Name:   "1",
 		Status: "true",
 	})
-	require.Nil(t, err)
-}
+	assert.Nil(t, err)
 
-func Test_CreateMany(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
-
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
-	model.SetConnect(connect)
-	_, err := model.CreateMany([]*Task{
+	// TestCreateMany
+	_, err = model.CreateMany([]*Task{
 		{
-			Name:   "huuhuhu",
+			Name:   "2",
 			Status: "true",
 		},
 		{
-			Name:   "lulu",
+			Name:   "3",
 			Status: "false",
 		},
+		{
+			Name:   "3",
+			Status: "true",
+		},
 	})
-	require.Nil(t, err)
-}
+	assert.Nil(t, err)
 
-type QueryTask struct {
-	Name string `bson:"name"`
-}
-
-func Test_UpdateOne(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
+	type QueryTask struct {
+		Name string `bson:"name"`
 	}
-
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
-	model.SetConnect(connect)
 	firstOne, err := model.FindOne(nil)
-	require.Nil(t, err)
+	assert.Nil(t, err)
 
+	// Test Update
 	if firstOne != nil {
 		err := model.Update(&QueryTask{
 			Name: firstOne.Name,
 		}, &Task{
 			Status: "abc",
 		})
-		require.Nil(t, err)
+		assert.Nil(t, err)
 
 		reFirst, err := model.FindOne(&QueryTask{
 			Name: firstOne.Name,
 		})
-		require.Nil(t, err)
-		require.Equal(t, "abc", reFirst.Status)
-	}
-}
-
-func Test_UpdateMany(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
+		assert.Nil(t, err)
+		assert.Equal(t, "abc", reFirst.Status)
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
-	model.SetConnect(connect)
-	err := model.UpdateMany(&QueryTask{
-		Name: "haha",
+	// TestUpdateMany
+	err = model.UpdateMany(&QueryTask{
+		Name: "3",
 	}, &Task{
 		Status: "abc",
 	})
-	require.Nil(t, err)
-}
+	assert.Nil(t, err)
 
-func Test_DeleteOne(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
+	reCheck, err := model.FindOne(&QueryTask{Name: "3"})
+	assert.Nil(t, err)
+	assert.Equal(t, "abc", reCheck.Status)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
-	model.SetConnect(connect)
-	err := model.Delete(&QueryTask{
-		Name: "huuhuhu",
-	})
-	require.Nil(t, err)
-}
+	// TestDelete
+	err = model.Delete(&QueryTask{Name: "2"})
+	assert.Nil(t, err)
 
-func Test_DeleteMany(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
+	reCheck, err = model.FindOne(&QueryTask{Name: "2"})
+	assert.Nil(t, err)
+	assert.Nil(t, reCheck)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
-	model := mongoose.NewModel[Task]("tasks")
-	model.SetConnect(connect)
-	err := model.DeleteMany(&QueryTask{
-		Name: "lulu",
-	})
-	require.Nil(t, err)
+	// TestDeleteMany
+	err = model.DeleteMany(&QueryTask{Name: "3"})
+	assert.Nil(t, err)
+
+	reCheck, err = model.FindOne(&QueryTask{Name: "3"})
+	assert.Nil(t, err)
+	assert.Nil(t, reCheck)
 }
