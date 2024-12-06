@@ -24,7 +24,7 @@ func Test_Module(t *testing.T) {
 		ctrl := module.NewController("books")
 
 		ctrl.Post("", func(ctx core.Ctx) error {
-			service := tenancy.InjectModel[Book](module)
+			service := tenancy.InjectModel[Book](module, ctx)
 			if service == nil {
 				return common.InternalServerException(ctx.Res(), "service is nil")
 			}
