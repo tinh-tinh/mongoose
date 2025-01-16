@@ -1,12 +1,11 @@
 package tenancy
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/tinh-tinh/mongoose"
-	"github.com/tinh-tinh/tinhtinh/common"
-	"github.com/tinh-tinh/tinhtinh/core"
+	"github.com/tinh-tinh/mongoose/v2"
+	"github.com/tinh-tinh/tinhtinh/v2/common"
+	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
 type Options struct {
@@ -26,7 +25,7 @@ type ConnectMapper map[string]*mongoose.Connect
 // database for each tenant. The provider is created by the ForRoot function and
 // is used by the ForFeature function to inject the connection of the tenant to the
 // model.
-func CreateConnectMapper(module *core.DynamicModule) *core.DynamicProvider {
+func CreateConnectMapper(module core.Module) core.Provider {
 	prd := module.NewProvider(core.ProviderOptions{
 		Name:  CONNECT_MAPPER,
 		Value: make(ConnectMapper),
@@ -42,13 +41,11 @@ func CreateConnectMapper(module *core.DynamicModule) *core.DynamicProvider {
 // tenant-specific connections into the models. This setup allows each tenant to have
 // a dedicated MongoDB connection based on their tenant ID.
 
-func ForRoot(opt Options) core.Module {
-	return func(module *core.DynamicModule) *core.DynamicModule {
+func ForRoot(opt Options) core.Modules {
+	return func(module core.Module) core.Module {
 		tenancyModule := module.New(core.NewModuleOptions{})
 
 		CreateConnectMapper(tenancyModule)
-		fmt.Println(tenancyModule.DataProviders)
-
 		tenancyModule.NewProvider(core.ProviderOptions{
 			Scope: core.Request,
 			Name:  CONNECT_TENANCY,
@@ -78,8 +75,8 @@ func ForRoot(opt Options) core.Module {
 // The provider of each model is created by calling its SetConnect method with the CONNECT_TENANCY
 // provider. The name of the provider is the same as the name of the collection, but with "Model_"
 // prefixed. The providers are exported by the module.
-func ForFeature(models ...mongoose.ModelCommon) core.Module {
-	return func(module *core.DynamicModule) *core.DynamicModule {
+func ForFeature(models ...mongoose.ModelCommon) core.Modules {
+	return func(module core.Module) core.Module {
 		modelModule := module.New(core.NewModuleOptions{Scope: core.Global})
 		for _, m := range models {
 			modelModule.NewProvider(core.ProviderOptions{
@@ -104,7 +101,7 @@ func ForFeature(models ...mongoose.ModelCommon) core.Module {
 // The model provider is created by the ForFeature function.
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
-func InjectModel[M any](module *core.DynamicModule, ctx core.Ctx, name ...string) *mongoose.Model[M] {
+func InjectModel[M any](module core.Module, ctx core.Ctx, name ...string) *mongoose.Model[M] {
 	var m M
 	var modelName string
 	if len(name) > 0 {

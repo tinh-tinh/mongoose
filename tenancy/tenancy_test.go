@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tinh-tinh/mongoose"
-	"github.com/tinh-tinh/mongoose/tenancy"
-	"github.com/tinh-tinh/tinhtinh/common"
-	"github.com/tinh-tinh/tinhtinh/core"
+	"github.com/tinh-tinh/mongoose/v2"
+	"github.com/tinh-tinh/mongoose/v2/tenancy"
+	"github.com/tinh-tinh/tinhtinh/v2/common"
+	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
 func Test_Module(t *testing.T) {
@@ -20,7 +20,7 @@ func Test_Module(t *testing.T) {
 		Author              string `bson:"author"`
 	}
 
-	bookController := func(module *core.DynamicModule) *core.DynamicController {
+	bookController := func(module core.Module) core.Controller {
 		ctrl := module.NewController("books")
 
 		ctrl.Post("", func(ctx core.Ctx) error {
@@ -45,20 +45,20 @@ func Test_Module(t *testing.T) {
 		return ctrl
 	}
 
-	bookModule := func(module *core.DynamicModule) *core.DynamicModule {
+	bookModule := func(module core.Module) core.Module {
 		bookMod := module.New(core.NewModuleOptions{
-			Imports: []core.Module{
+			Imports: []core.Modules{
 				tenancy.ForFeature(mongoose.NewModel[Book]()),
 			},
-			Controllers: []core.Controller{bookController},
+			Controllers: []core.Controllers{bookController},
 		})
 
 		return bookMod
 	}
 
-	appModule := func() *core.DynamicModule {
+	appModule := func() core.Module {
 		module := core.NewModule(core.NewModuleOptions{
-			Imports: []core.Module{
+			Imports: []core.Modules{
 				tenancy.ForRoot(tenancy.Options{
 					GetTenantID: func(r *http.Request) string {
 						return r.Header.Get("x-tenant-id")
