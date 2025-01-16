@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tinh-tinh/mongoose"
+	"github.com/tinh-tinh/mongoose/v2"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

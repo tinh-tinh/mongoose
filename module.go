@@ -1,16 +1,16 @@
 package mongoose
 
 import (
-	"github.com/tinh-tinh/tinhtinh/common"
-	"github.com/tinh-tinh/tinhtinh/core"
+	"github.com/tinh-tinh/tinhtinh/v2/common"
+	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
 const CONNECT_MONGO core.Provide = "CONNECT_MONGO"
 
 // ForRoot creates a module which provides a mongodb connection from a given url.
 // The connection is exported as CONNECT_MONGO.
-func ForRoot(url string, db string) core.Module {
-	return func(module *core.DynamicModule) *core.DynamicModule {
+func ForRoot(url string, db string) core.Modules {
+	return func(module core.Module) core.Module {
 		mongooseModule := module.New(core.NewModuleOptions{})
 		mongooseModule.NewProvider(core.ProviderOptions{
 			Name:  CONNECT_MONGO,
@@ -26,8 +26,8 @@ func ForRoot(url string, db string) core.Module {
 // The provider of each model is created by calling its SetConnect method with the CONNECT_MONGO
 // provider. The name of the provider is the same as the name of the collection, but with "Model_"
 // prefixed. The providers are exported by the module.
-func ForFeature(models ...ModelCommon) core.Module {
-	return func(module *core.DynamicModule) *core.DynamicModule {
+func ForFeature(models ...ModelCommon) core.Modules {
+	return func(module core.Module) core.Module {
 		modelModule := module.New(core.NewModuleOptions{})
 
 		for _, m := range models {
@@ -58,7 +58,7 @@ func GetModelName(name string) core.Provide {
 
 // InjectConnect injects the CONNECT_MONGO provider and returns its value as a *Connect.
 // The CONNECT_MONGO provider is created by the ForRoot function.
-func InjectConnect(module *core.DynamicModule) *Connect {
+func InjectConnect(module core.Module) *Connect {
 	data, ok := module.Ref(CONNECT_MONGO).(*Connect)
 	if !ok {
 		return nil
@@ -71,7 +71,7 @@ func InjectConnect(module *core.DynamicModule) *Connect {
 // The model provider is created by the ForFeature function.
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
-func InjectModel[M any](module *core.DynamicModule, name ...string) *Model[M] {
+func InjectModel[M any](module core.Module, name ...string) *Model[M] {
 	var m M
 	var modelName string
 	if len(name) > 0 {
