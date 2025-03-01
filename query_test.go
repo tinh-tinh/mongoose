@@ -28,9 +28,10 @@ func Test_Query(t *testing.T) {
 	assert.Nil(t, err)
 
 	if total != 0 {
-		model.DeleteMany(nil)
+		err := model.DeleteMany(nil)
+		assert.Nil(t, err)
 	}
-	model.CreateMany([]*Task{
+	_, err = model.CreateMany([]*Task{
 		{
 			Name:   "1",
 			Status: "true",
@@ -60,6 +61,7 @@ func Test_Query(t *testing.T) {
 			Status: "true",
 		},
 	})
+	assert.Nil(t, err)
 
 	// TestFind
 	data, err := model.Find(&QueryTask{Name: "2"})
