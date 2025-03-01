@@ -46,7 +46,6 @@ func ForRoot(opt Options) core.Modules {
 		tenancyModule := module.New(core.NewModuleOptions{})
 
 		CreateConnectMapper(tenancyModule)
-
 		tenancyModule.NewProvider(core.ProviderOptions{
 			Scope: core.Request,
 			Name:  CONNECT_TENANCY,
