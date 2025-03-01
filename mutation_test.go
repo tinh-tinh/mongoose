@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tinh-tinh/mongoose"
+	"github.com/tinh-tinh/mongoose/v2"
 )
 
 func Test_Mutation(t *testing.T) {
@@ -20,10 +20,11 @@ func Test_Mutation(t *testing.T) {
 	model.SetConnect(connect)
 
 	// Clear before test
-	model.DeleteMany(nil)
+	err := model.DeleteMany(nil)
+	assert.Nil(t, err)
 
 	// TestCreate
-	_, err := model.Create(&Task{
+	_, err = model.Create(&Task{
 		Name:   "1",
 		Status: "true",
 	})

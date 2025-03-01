@@ -4,8 +4,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tinh-tinh/mongoose"
+	"github.com/tinh-tinh/mongoose/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -21,14 +22,15 @@ func Test_Model(t *testing.T) {
 	model := mongoose.NewModel[Book]("models")
 	model.SetConnect(connect)
 
-	model.DeleteMany(nil)
+	err := model.DeleteMany(nil)
+	assert.Nil(t, err)
 
 	type CreateBook struct {
 		Title string `bson:"title"`
 		Level int    `bson:"level"`
 	}
 	model.Set(&CreateBook{Title: "abc", Level: 1})
-	err := model.Save()
+	err = model.Save()
 	require.Nil(t, err)
 
 	firstOne, err := model.FindOne(nil)
@@ -70,8 +72,10 @@ func Test_Recusive(t *testing.T) {
 	model := mongoose.NewModel[Location]("recursive")
 	model.SetConnect(connect)
 
-	model.DeleteMany(nil)
-	_, err := model.Create(&Location{
+	err := model.DeleteMany(nil)
+	assert.Nil(t, err)
+	
+	_, err = model.Create(&Location{
 		Longitude: 1,
 		Latitude:  2,
 		Address: &Address{
