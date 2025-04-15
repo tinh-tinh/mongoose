@@ -2,7 +2,6 @@ package mongoose_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestTransaction(t *testing.T) {
 	model := mongoose.NewModel[Order]("transactions")
 	model.Index(bson.D{{Key: "code", Value: 1}}, true)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)

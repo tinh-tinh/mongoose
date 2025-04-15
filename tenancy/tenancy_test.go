@@ -3,7 +3,6 @@ package tenancy_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -63,7 +62,7 @@ func Test_Module(t *testing.T) {
 					GetTenantID: func(r *http.Request) string {
 						return r.Header.Get("x-tenant-id")
 					},
-					Uri: os.Getenv("MONGO_URI"),
+					Uri: "mongodb://localhost:27017/?replicaSet=rs0",
 				}),
 				bookModule,
 			},

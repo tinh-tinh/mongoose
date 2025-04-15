@@ -2,7 +2,6 @@ package mongoose
 
 import (
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -71,7 +70,7 @@ func Test_Module(t *testing.T) {
 	appModule := func() core.Module {
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Modules{
-				ForRoot(os.Getenv("MONGO_URI"), "test"),
+				ForRoot("mongodb://localhost:27017/?replicaSet=rs0", "test"),
 				bookModule,
 			},
 		})

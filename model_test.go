@@ -1,7 +1,6 @@
 package mongoose_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,7 @@ func Test_Model(t *testing.T) {
 		Author              string `bson:"author"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 	model := mongoose.NewModel[Book]("models")
 	model.SetConnect(connect)
 
@@ -68,13 +67,13 @@ func Test_Recusive(t *testing.T) {
 		Address             *Address `bson:"address"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 	model := mongoose.NewModel[Location]("recursive")
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)
 	assert.Nil(t, err)
-	
+
 	_, err = model.Create(&Location{
 		Longitude: 1,
 		Latitude:  2,
@@ -129,6 +128,6 @@ func TestIndex(t *testing.T) {
 	userModel := mongoose.NewModel[User]("indexes")
 	userModel.Index(bson.D{{Key: "email", Value: 1}}, true)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 	userModel.SetConnect(connect)
 }

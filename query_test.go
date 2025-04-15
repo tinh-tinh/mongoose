@@ -1,7 +1,6 @@
 package mongoose_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ func Test_Query(t *testing.T) {
 		Name string `bson:"name"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 	model := mongoose.NewModel[Task]("queries")
 	model.SetConnect(connect)
 
