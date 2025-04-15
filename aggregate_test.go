@@ -2,7 +2,6 @@ package mongoose_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestAggregate(t *testing.T) {
 		Department          *Department        `bson:"department" ref:"departmentID->departments"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 
 	employeeModel := mongoose.NewModel[Employee]("employees")
 	employeeModel.SetConnect(connect)
@@ -68,7 +67,7 @@ func TestFindOne(t *testing.T) {
 		Department          *Department        `bson:"department" ref:"departmentID->departments"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test")
 
 	employeeModel := mongoose.NewModel[Employee]("employees")
 	employeeModel.SetConnect(connect)

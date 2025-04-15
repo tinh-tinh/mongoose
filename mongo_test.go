@@ -1,7 +1,6 @@
 package mongoose_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,7 @@ func Test_Connect(t *testing.T) {
 		Logger().
 		SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test", loggerOptions)
+	connect := mongoose.New("mongodb://localhost:27017/?replicaSet=rs0", "test", loggerOptions)
 	err := connect.Ping()
 	require.Nil(t, err)
 }

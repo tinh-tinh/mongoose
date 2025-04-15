@@ -16,6 +16,20 @@ jobs:
     strategy:
       matrix:
         go-version: [ '1.22.x' ]
+    
+    services:
+      mongo1:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+          --replSet rs0
+          --bind_ip_all
+
     steps:
     - uses: actions/checkout@v4
 
@@ -23,6 +37,50 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.22.0'
+
+    - name: Start mongo2 and mongo3 manually
+      run: |
+        docker run -d \
+          --name mongo2 \
+          --hostname mongo2 \
+          --network ${{ job.container.network }} \
+          mongo:6.0 \
+          mongod --replSet rs0 --bind_ip_all
+
+        docker run -d \
+          --name mongo3 \
+          --hostname mongo3 \
+          --network ${{ job.container.network }} \
+          mongo:6.0 \
+          mongod --replSet rs0 --bind_ip_all
+
+    - name: Wait for Mongo containers to be healthy
+      run: sleep 10
+
+    - name: Initiate Replica Set
+      run: |
+        mongosh --host mongo1 --eval '
+          rs.initiate({
+            _id: "rs0",
+            members: [
+              { _id: 0, host: "mongo1:27017" },
+              { _id: 1, host: "mongo2:27017" },
+              { _id: 2, host: "mongo3:27017" }
+            ]
+          });
+          rs.status();
+        '
+
+    - name: Wait for PRIMARY to be elected
+      run: |
+        for i in {1..10}; do
+          if mongosh --host mongo1 --quiet --eval 'rs.isMaster().ismaster' | grep true; then
+            echo "Replica set is ready!"
+            break
+          fi
+          echo "Waiting for PRIMARY..."
+          sleep 3
+        done
 
     - name: Install dependencies
       run: go mod download
