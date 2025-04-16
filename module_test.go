@@ -71,7 +71,7 @@ func Test_Module(t *testing.T) {
 	appModule := func() core.Module {
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Modules{
-				ForRoot(os.Getenv("MONGO_URI"), "test"),
+				ForRoot(os.Getenv("MONGO_URI") + "/test"),
 				bookModule,
 			},
 		})

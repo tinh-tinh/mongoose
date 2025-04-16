@@ -23,7 +23,8 @@ func TestAggregate(t *testing.T) {
 		Department          *Department        `bson:"department" ref:"departmentID->departments"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
 
 	employeeModel := mongoose.NewModel[Employee]("employees")
 	employeeModel.SetConnect(connect)
@@ -68,7 +69,8 @@ func TestFindOne(t *testing.T) {
 		Department          *Department        `bson:"department" ref:"departmentID->departments"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
 
 	employeeModel := mongoose.NewModel[Employee]("employees")
 	employeeModel.SetConnect(connect)

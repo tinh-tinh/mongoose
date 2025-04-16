@@ -27,7 +27,8 @@ func TestTransaction(t *testing.T) {
 	model := mongoose.NewModel[Order]("transactions")
 	model.Index(bson.D{{Key: "code", Value: 1}}, true)
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)
