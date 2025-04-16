@@ -20,7 +20,8 @@ func Test_Query(t *testing.T) {
 		Name string `bson:"name"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
 	model := mongoose.NewModel[Task]("queries")
 	model.SetConnect(connect)
 

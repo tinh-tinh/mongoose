@@ -3,18 +3,19 @@ package mongoose
 import (
 	"github.com/tinh-tinh/tinhtinh/v2/common"
 	"github.com/tinh-tinh/tinhtinh/v2/core"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const CONNECT_MONGO core.Provide = "CONNECT_MONGO"
 
 // ForRoot creates a module which provides a mongodb connection from a given url.
 // The connection is exported as CONNECT_MONGO.
-func ForRoot(url string, db string) core.Modules {
+func ForRoot(uri string, opts ...*options.ClientOptions) core.Modules {
 	return func(module core.Module) core.Module {
 		mongooseModule := module.New(core.NewModuleOptions{})
 		mongooseModule.NewProvider(core.ProviderOptions{
 			Name:  CONNECT_MONGO,
-			Value: New(url, db),
+			Value: New(uri, opts...),
 		})
 		mongooseModule.Export(CONNECT_MONGO)
 

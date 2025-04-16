@@ -58,8 +58,10 @@ func ForRoot(opt Options) core.Modules {
 				if connectMapper == nil || !ok {
 					connectMapper = make(ConnectMapper)
 				}
+
 				if connectMapper[tenantId] == nil {
-					connectMapper[tenantId] = mongoose.New(opt.Uri, tenantId)
+					connectMapper[tenantId] = mongoose.New(opt.Uri)
+					connectMapper[tenantId].SetDB(tenantId)
 				}
 
 				return connectMapper[tenantId]

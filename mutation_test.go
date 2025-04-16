@@ -15,7 +15,8 @@ func Test_Mutation(t *testing.T) {
 		Status              string `bson:"status"`
 	}
 
-	connect := mongoose.New(os.Getenv("MONGO_URI"), "test")
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
 	model := mongoose.NewModel[Task]("mutations")
 	model.SetConnect(connect)
 
