@@ -167,3 +167,83 @@ func Test_Query(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, reCheck)
 }
+
+func Test_NotTimestamp(t *testing.T) {
+	type SpecialTask struct {
+		ID     int    `bson:"_id"`
+		Name   string `bson:"name"`
+		Status string `bson:"status"`
+	}
+
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[SpecialTask]("sp_tasks", mongoose.ModelOptions{
+		Timestamp: false,
+		ID:        false,
+	})
+	model.SetConnect(connect)
+
+	total, err := model.Count(nil)
+	assert.Nil(t, err)
+
+	if total == 0 {
+		_, err = model.Create(&SpecialTask{
+			ID:     1,
+			Name:   "abv",
+			Status: "true",
+		})
+		assert.Nil(t, err)
+	}
+
+	data, err := model.FindByID(1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, data.ID)
+
+	data, err = model.FindByIDAndUpdate(1, &SpecialTask{
+		Status: "xtz",
+	})
+	assert.Nil(t, err)
+
+	reLast, err := model.FindByID(data.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "xtz", reLast.Status)
+
+	updateFound, err := model.FindByIDAndReplace(data.ID, &SpecialTask{Status: "ghi"})
+	assert.Nil(t, err)
+
+	reCheck, err := model.FindByID(updateFound.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "ghi", reCheck.Status)
+	assert.Equal(t, "", reCheck.Name)
+
+	_, err = model.FindByIDAndDelete(reCheck.ID)
+	assert.Nil(t, err)
+
+	reCheck, err = model.FindByID(reCheck.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, reCheck)
+}
+
+func Test_FailedFind(t *testing.T) {
+	type Failed struct {
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+	}
+
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[Failed]("faileds")
+	model.SetConnect(connect)
+
+	_, err := model.FindByID("abc")
+	assert.NotNil(t, err)
+
+	_, err = model.FindByIDAndUpdate("abc", &Failed{})
+	assert.NotNil(t, err)
+
+	_, err = model.FindByIDAndReplace("abc", &Failed{})
+	assert.NotNil(t, err)
+
+	_, err = model.FindByIDAndDelete("abc")
+	assert.NotNil(t, err)
+}
