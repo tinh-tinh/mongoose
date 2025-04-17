@@ -16,7 +16,7 @@ func Test_Module(t *testing.T) {
 		Title      string `bson:"title"`
 		Author     string `bson:"author"`
 	}
-	bookModel := NewModel[Book]()
+	bookModel := NewModel[Book]("Book")
 
 	bookController := func(module core.Module) core.Controller {
 		ctrl := module.NewController("books")

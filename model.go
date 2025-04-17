@@ -7,7 +7,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/tinh-tinh/tinhtinh/v2/common"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,6 +31,7 @@ type ModelCommon interface {
 
 type Model[M any] struct {
 	name       string
+	option     *ModelOptions
 	docs       []bson.E
 	connect    *Connect
 	idx        mongo.IndexModel
@@ -39,19 +39,27 @@ type Model[M any] struct {
 	Collection *mongo.Collection
 }
 
+type ModelOptions struct {
+	Timestamp bool
+	ID        bool
+}
+
 // NewModel returns a new instance of Model[M] with the given connect and name
 // name is the name of the collection in the database
 // the returned Model[M] is used to interact with the collection in the database
-func NewModel[M any](names ...string) *Model[M] {
-	var name string
-	if len(names) > 0 {
-		name = names[0]
-	} else {
-		var model M
-		name = common.GetStructName(model)
+func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
+	defaultOption := &ModelOptions{
+		ID:        true,
+		Timestamp: true,
 	}
+
+	if len(opts) > 0 {
+		defaultOption = &opts[0]
+	}
+
 	return &Model[M]{
-		name: name,
+		name:   name,
+		option: defaultOption,
 	}
 }
 
@@ -85,10 +93,6 @@ func (m *Model[M]) Index(idx bson.D, unique bool) {
 		Options: options.Index().SetUnique(unique),
 	}
 	m.idx = indexModel
-	// _, err := m.Collection.Indexes().CreateOne(m.Ctx, indexModel)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
 }
 
 // Set sets the data of the model to the given data.
@@ -134,11 +138,21 @@ func (m *Model[M]) Save() error {
 		return e.Key == "_id"
 	})
 	if idIndex == -1 {
-		inserts := append(m.docs,
-			bson.E{Key: "_id", Value: primitive.NewObjectID()},
-			bson.E{Key: "createdAt", Value: time.Now()},
-			bson.E{Key: "updatedAt", Value: time.Now()},
-		)
+		inserts := m.docs
+
+		if m.option.ID {
+			inserts = append(m.docs,
+				bson.E{Key: "_id", Value: primitive.NewObjectID()},
+			)
+		}
+
+		if m.option.Timestamp {
+			inserts = append(m.docs,
+				bson.E{Key: "createdAt", Value: time.Now()},
+				bson.E{Key: "updatedAt", Value: time.Now()},
+			)
+		}
+
 		_, err := m.Collection.InsertOne(m.Ctx, inserts)
 		if err != nil {
 			return err
@@ -146,7 +160,10 @@ func (m *Model[M]) Save() error {
 	} else {
 		id := m.docs[idIndex].Value
 		updates := append(m.docs[:idIndex], m.docs[idIndex+1:]...)
-		updates = append(updates, bson.E{Key: "updatedAt", Value: time.Now()})
+
+		if m.option.Timestamp {
+			updates = append(updates, bson.E{Key: "updatedAt", Value: time.Now()})
+		}
 		_, err := m.Collection.UpdateByID(m.Ctx, id, bson.D{{Key: "$set", Value: updates}})
 		if err != nil {
 			return err

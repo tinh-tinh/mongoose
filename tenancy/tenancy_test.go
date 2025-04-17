@@ -48,7 +48,7 @@ func Test_Module(t *testing.T) {
 	bookModule := func(module core.Module) core.Module {
 		bookMod := module.New(core.NewModuleOptions{
 			Imports: []core.Modules{
-				tenancy.ForFeature(mongoose.NewModel[Book]()),
+				tenancy.ForFeature(mongoose.NewModel[Book]("Book")),
 			},
 			Controllers: []core.Controllers{bookController},
 		})
