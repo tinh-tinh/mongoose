@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/tinh-tinh/tinhtinh/v2/dto/validator"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +14,14 @@ import (
 // It validates the input data and inserts a new document into the collection.
 // Returns the result of the insertion as an *mongo.InsertOneResult and any error encountered.
 func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
-	m.validData(input, "insert")
+	if m.option.Validation {
+		err := validator.Scanner(input)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	m.serializeData(input, "insert")
 	result, err := m.Collection.InsertOne(m.Ctx, input)
 	if err != nil {
 		return nil, err
@@ -29,13 +37,24 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	data := make([]interface{}, 0)
 
 	for _, v := range input {
+		if m.option.Validation {
+			err := validator.Scanner(v)
+			if err != nil {
+				return nil, err
+			}
+		}
 		ct := reflect.ValueOf(v).Elem()
-		for i := 0; i < ct.NumField(); i++ {
+		for i := range ct.NumField() {
 			field := ct.Type().Field(i)
 			name := field.Type.Name()
 			if name == "BaseSchema" {
 				ct.FieldByName(name).Set(reflect.ValueOf(BaseSchema{
 					ID:        primitive.NewObjectID(),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}))
+			} else if name == "BaseTimestamp" {
+				ct.FieldByName(name).Set(reflect.ValueOf(BaseTimestamp{
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}))
@@ -63,7 +82,13 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 		return err
 	}
 
-	update := m.validData(data, "update")
+	if m.option.Validation {
+		err := validator.Scanner(data)
+		if err != nil {
+			return err
+		}
+	}
+	update := m.serializeData(data, "update")
 	_, err = m.Collection.UpdateOne(m.Ctx, query, bson.D{{Key: "$set", Value: update}})
 	if err != nil {
 		return err
@@ -83,7 +108,13 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 		return err
 	}
 
-	update := m.validData(data, "update")
+	if m.option.Validation {
+		err := validator.Scanner(data)
+		if err != nil {
+			return err
+		}
+	}
+	update := m.serializeData(data, "update")
 
 	_, err = m.Collection.UpdateMany(m.Ctx, query, bson.D{{Key: "$set", Value: update}})
 	if err != nil {
@@ -129,7 +160,7 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 	return nil
 }
 
-// validData validates and prepares the data for update/insert.
+// serializeData validates and prepares the data for update/insert.
 // It iterates over the struct fields of the given data and sets the corresponding field of the model to the value of the field.
 // If the field is not found in the model, it is not set.
 // If the field is tagged with bson, the tag value is used as the key.
@@ -138,11 +169,12 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 // If mutation is "update", it sets the updatedAt to the current time.
 // The given data must be a struct.
 // It returns the validated data as a bson.E slice.
-func (m *Model[M]) validData(data *M, mutation string) []bson.E {
+func (m *Model[M]) serializeData(data *M, mutation string) []bson.E {
 	upsert := []bson.E{}
+
 	if mutation == "insert" {
 		ct := reflect.ValueOf(data).Elem()
-		for i := 0; i < ct.NumField(); i++ {
+		for i := range ct.NumField() {
 			field := ct.Type().Field(i)
 			name := field.Type.Name()
 			if name == "BaseSchema" {
@@ -152,24 +184,22 @@ func (m *Model[M]) validData(data *M, mutation string) []bson.E {
 					UpdatedAt: time.Now(),
 				}))
 			}
-			// tagRef := field.Tag.Get("ref")
-			// if tagRef != "" {
-			// 	ct.FieldByName(name).Set(reflect.ValueOf(nil))
-			// }
 		}
 	} else {
-		if mutation == "replace" {
+		if m.option.Timestamp {
+			if mutation == "replace" {
+				upsert = append(upsert, bson.E{
+					Key:   "createdAt",
+					Value: time.Now(),
+				})
+			}
 			upsert = append(upsert, bson.E{
-				Key:   "createdAt",
+				Key:   "updatedAt",
 				Value: time.Now(),
 			})
 		}
-		upsert = append(upsert, bson.E{
-			Key:   "updatedAt",
-			Value: time.Now(),
-		})
 		ct := reflect.ValueOf(data).Elem()
-		for i := 0; i < ct.NumField(); i++ {
+		for i := range ct.NumField() {
 			field := ct.Type().Field(i)
 
 			nameTag := field.Tag.Get("bson")

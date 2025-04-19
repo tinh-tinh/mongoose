@@ -1,6 +1,7 @@
 package mongoose
 
 import (
+	"github.com/tinh-tinh/tinhtinh/v2/dto/validator"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -75,7 +76,13 @@ func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options
 		return nil, err
 	}
 
-	upsert := m.validData(data, "update")
+	if m.option.Validation {
+		err := validator.Scanner(data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	upsert := m.serializeData(data, "update")
 
 	var model M
 	err = m.Collection.FindOneAndUpdate(m.Ctx, query, bson.D{{Key: "$set", Value: upsert}}, opt...).Decode(&model)
@@ -172,7 +179,13 @@ func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*option
 		return nil, err
 	}
 
-	update := m.validData(data, "replace")
+	if m.option.Validation {
+		err := validator.Scanner(data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	update := m.serializeData(data, "replace")
 	var model M
 	err = m.Collection.FindOneAndReplace(m.Ctx, query, update, opt...).Decode(&model)
 	if err != nil {

@@ -135,3 +135,68 @@ func TestIndex(t *testing.T) {
 	connect.SetDB("test")
 	userModel.SetConnect(connect)
 }
+
+func Test_ToDoc(t *testing.T) {
+	_, err := mongoose.ToDoc("nil")
+	assert.NotNil(t, err)
+}
+
+func Test_Validator(t *testing.T) {
+	type Student struct {
+		mongoose.BaseTimestamp `bson:"inline"`
+		ID                     int    `bson:"_id"`
+		FirstName              string `bson:"firstName" validate:"isAlpha"`
+		LastName               string `bson:"lastName" validate:"isAlpha"`
+		Email                  string `bson:"email" validate:"isEmail"`
+	}
+
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[Student]("students")
+	model.SetConnect(connect)
+
+	err := model.DeleteMany(nil)
+	assert.Nil(t, err)
+
+	_, err = model.Create(&Student{
+		FirstName: "12",
+		LastName:  "222",
+		Email:     "111",
+	})
+	require.NotNil(t, err)
+
+	_, err = model.Create(&Student{
+		ID:        1,
+		FirstName: "John",
+		LastName:  "Dpe",
+		Email:     "john@gmail.com",
+	})
+	require.Nil(t, err)
+
+	_, err = model.FindOneAndUpdate(nil, &Student{Email: "120"})
+	assert.NotNil(t, err)
+
+	_, err = model.FindOneAndReplace(nil, &Student{Email: "120"})
+	assert.NotNil(t, err)
+
+	_, err = model.CreateMany([]*Student{
+		{FirstName: "2"},
+	})
+	assert.NotNil(t, err)
+
+	_, err = model.CreateMany([]*Student{
+		{
+			ID:        2,
+			FirstName: "Ricardo",
+			LastName:  "Kaka",
+			Email:     "kaka@gmail.com",
+		},
+	})
+	require.Nil(t, err)
+
+	err = model.Update(map[string]any{}, &Student{FirstName: "$##$$#"})
+	assert.NotNil(t, err)
+
+	err = model.UpdateMany(map[string]any{}, &Student{FirstName: "$##$$#"})
+	assert.NotNil(t, err)
+}
