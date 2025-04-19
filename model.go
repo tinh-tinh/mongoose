@@ -40,8 +40,9 @@ type Model[M any] struct {
 }
 
 type ModelOptions struct {
-	Timestamp bool
-	ID        bool
+	Timestamp  bool
+	ID         bool
+	Validation bool
 }
 
 // NewModel returns a new instance of Model[M] with the given connect and name
@@ -49,8 +50,9 @@ type ModelOptions struct {
 // the returned Model[M] is used to interact with the collection in the database
 func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
 	defaultOption := &ModelOptions{
-		ID:        true,
-		Timestamp: true,
+		ID:         true,
+		Timestamp:  true,
+		Validation: true,
 	}
 
 	if len(opts) > 0 {
@@ -105,7 +107,7 @@ func (m *Model[M]) Set(data interface{}) {
 	var model M
 
 	ctInput := reflect.ValueOf(data).Elem()
-	for i := 0; i < ctInput.NumField(); i++ {
+	for i := range ctInput.NumField() {
 		name := ctInput.Type().Field(i).Name
 		val := ctInput.Field(i).Interface()
 
