@@ -235,15 +235,21 @@ func Test_FailedFind(t *testing.T) {
 	model := mongoose.NewModel[Failed]("faileds")
 	model.SetConnect(connect)
 
-	_, err := model.FindByID("abc")
+	_, err := model.FindOne("abc")
 	assert.NotNil(t, err)
 
-	_, err = model.FindByIDAndUpdate("abc", &Failed{})
+	_, err = model.Find("abc")
 	assert.NotNil(t, err)
 
-	_, err = model.FindByIDAndReplace("abc", &Failed{})
+	_, err = model.Count("abc")
 	assert.NotNil(t, err)
 
-	_, err = model.FindByIDAndDelete("abc")
+	_, err = model.FindOneAndUpdate("abc", &Failed{})
+	assert.NotNil(t, err)
+
+	_, err = model.FindOneAndReplace("abc", &Failed{})
+	assert.NotNil(t, err)
+
+	_, err = model.FindOneAndDelete("abc")
 	assert.NotNil(t, err)
 }

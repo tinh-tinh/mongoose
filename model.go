@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,6 +36,8 @@ type Model[M any] struct {
 	docs       []bson.E
 	connect    *Connect
 	idx        mongo.IndexModel
+	preHooks   []Hook[M]
+	postHooks  []Hook[M]
 	Ctx        context.Context
 	Collection *mongo.Collection
 }
@@ -132,6 +135,11 @@ func (m *Model[M]) Set(data interface{}) {
 // If the model has no changes, Save does nothing.
 // Save returns an error if the operation fails.
 func (m *Model[M]) Save() error {
+	err := ExecutePreHook(Save, m, m.docs)
+	if err != nil {
+		return err
+	}
+
 	if len(m.docs) == 0 {
 		return nil
 	}
@@ -172,8 +180,40 @@ func (m *Model[M]) Save() error {
 		}
 	}
 
+	err = ExecutePostHook(Save, m, m.docs)
+	if err != nil {
+		return err
+	}
 	m.docs = nil
 	return nil
+}
+
+func (m *Model[M]) Pre(nameStr HookName, hookFnc HookFnc[M], async ...bool) {
+	names := strings.Split(string(nameStr), "|")
+	if len(async) == 0 {
+		async = append(async, false)
+	}
+	for _, name := range names {
+		m.preHooks = append(m.preHooks, Hook[M]{
+			Name:  HookName(name),
+			Func:  hookFnc,
+			Async: async[0],
+		})
+	}
+}
+
+func (m *Model[M]) Post(nameStr HookName, hookFnc HookFnc[M], async ...bool) {
+	names := strings.Split(string(nameStr), "|")
+	if len(async) == 0 {
+		async = append(async, false)
+	}
+	for _, name := range names {
+		m.postHooks = append(m.postHooks, Hook[M]{
+			Name:  HookName(name),
+			Func:  hookFnc,
+			Async: async[0],
+		})
+	}
 }
 
 // ToDoc converts an interface{} to a bson.D, suitable for use with the bson and mongo packages.

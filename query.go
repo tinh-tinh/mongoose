@@ -1,7 +1,6 @@
 package mongoose
 
 import (
-	"github.com/tinh-tinh/tinhtinh/v2/dto/validator"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -53,12 +52,26 @@ func (m *Model[M]) FindByID(id interface{}, opt ...QueryOptions) (*M, error) {
 // and returns the count as an int64. It returns an error if there is a problem with
 // the query or the counting operation fails.
 func (m *Model[M]) Count(filter interface{}) (int64, error) {
+	err := ExecutePreHook(Count, m, filter)
+	if err != nil {
+		return 0, err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return 0, err
 	}
 
-	return m.Collection.CountDocuments(m.Ctx, query)
+	count, err := m.Collection.CountDocuments(m.Ctx, query)
+	if err != nil {
+		return 0, err
+	}
+
+	err = ExecutePostHook(Count, m)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // FindOneAndUpdate returns a single document that matches the filter and updates it with the
@@ -71,21 +84,27 @@ func (m *Model[M]) Count(filter interface{}) (int64, error) {
 // FindOneAndUpdate returns an error if there is a problem with the query or the document
 // cannot be decoded. If no document matches the filter, the function returns nil, nil.
 func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options.FindOneAndUpdateOptions) (*M, error) {
-	query, err := ToDoc(filter)
+	err := ExecutePreHook(FindOneAndUpdate, m, filter, data)
 	if err != nil {
 		return nil, err
 	}
 
-	if m.option.Validation {
-		err := validator.Scanner(data)
-		if err != nil {
-			return nil, err
-		}
+	query, err := ToDoc(filter)
+	if err != nil {
+		return nil, err
 	}
-	upsert := m.serializeData(data, "update")
+	upsert, err := m.serializeData(data, "update")
+	if err != nil {
+		return nil, err
+	}
 
 	var model M
 	err = m.Collection.FindOneAndUpdate(m.Ctx, query, bson.D{{Key: "$set", Value: upsert}}, opt...).Decode(&model)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ExecutePostHook(FindOneAndUpdate, m, model)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +146,11 @@ func (m *Model[M]) FindByIDAndUpdate(id any, data *M, opt ...*options.FindOneAnd
 // FindOneAndDelete returns an error if there is a problem with the query or the document cannot
 // be decoded. If no document matches the filter, the function returns nil, nil.
 func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneAndDeleteOptions) (*M, error) {
+	err := ExecutePreHook(FindOneAndDelete, m, filter)
+	if err != nil {
+		return nil, err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return nil, err
@@ -138,6 +162,10 @@ func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneA
 		return nil, err
 	}
 
+	err = ExecutePostHook(FindOneAndDelete, m, model)
+	if err != nil {
+		return nil, err
+	}
 	return &model, nil
 }
 
@@ -174,24 +202,31 @@ func (m *Model[M]) FindByIDAndDelete(id any, opt ...*options.FindOneAndDeleteOpt
 // FindOneAndReplace returns an error if there is a problem with the query or the document
 // cannot be decoded. If no document matches the filter, the function returns nil, nil.
 func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*options.FindOneAndReplaceOptions) (*M, error) {
+	err := ExecutePreHook(FindOneAndReplace, m, filter, data)
+	if err != nil {
+		return nil, err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return nil, err
 	}
 
-	if m.option.Validation {
-		err := validator.Scanner(data)
-		if err != nil {
-			return nil, err
-		}
+	update, err := m.serializeData(data, "replace")
+	if err != nil {
+		return nil, err
 	}
-	update := m.serializeData(data, "replace")
+
 	var model M
 	err = m.Collection.FindOneAndReplace(m.Ctx, query, update, opt...).Decode(&model)
 	if err != nil {
 		return nil, err
 	}
 
+	err = ExecutePostHook(FindOneAndReplace, m, model)
+	if err != nil {
+		return nil, err
+	}
 	return &model, nil
 }
 
