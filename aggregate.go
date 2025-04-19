@@ -25,6 +25,11 @@ func (m *Model[M]) Aggregate(pipeline mongo.Pipeline) ([]bson.M, error) {
 }
 
 func (m *Model[M]) FindOne(filter interface{}, opts ...QueryOptions) (*M, error) {
+	err := ExecutePreHook(FindOne, m, filter)
+	if err != nil {
+		return nil, err
+	}
+
 	pipeline := []bson.M{}
 	// Filter by search
 
@@ -90,10 +95,19 @@ func (m *Model[M]) FindOne(filter interface{}, opts ...QueryOptions) (*M, error)
 		return nil, nil
 	}
 
+	err = ExecutePostHook(FindOne, m, data[0])
+	if err != nil {
+		return nil, err
+	}
 	return data[0], nil
 }
 
 func (m *Model[M]) Find(filter interface{}, opts ...QueriesOptions) ([]*M, error) {
+	err := ExecutePreHook(Find, m, filter)
+	if err != nil {
+		return nil, err
+	}
+
 	pipeline := []bson.M{}
 	// Filter by search
 
@@ -161,6 +175,10 @@ func (m *Model[M]) Find(filter interface{}, opts ...QueriesOptions) ([]*M, error
 	}
 	cursor.Close(m.Ctx)
 
+	err = ExecutePostHook(Find, m, data)
+	if err != nil {
+		return nil, err
+	}
 	return data, nil
 }
 

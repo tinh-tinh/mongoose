@@ -14,19 +14,24 @@ import (
 // It validates the input data and inserts a new document into the collection.
 // Returns the result of the insertion as an *mongo.InsertOneResult and any error encountered.
 func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
-	if m.option.Validation {
-		err := validator.Scanner(input)
-		if err != nil {
-			return nil, err
-		}
+	_, err := m.serializeData(input, "insert")
+	if err != nil {
+		return nil, err
 	}
 
-	m.serializeData(input, "insert")
+	err = ExecutePreHook(Create, m)
+	if err != nil {
+		return nil, err
+	}
 	result, err := m.Collection.InsertOne(m.Ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
+	err = ExecutePostHook(Create, m, result)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -37,30 +42,16 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	data := make([]interface{}, 0)
 
 	for _, v := range input {
-		if m.option.Validation {
-			err := validator.Scanner(v)
-			if err != nil {
-				return nil, err
-			}
-		}
-		ct := reflect.ValueOf(v).Elem()
-		for i := range ct.NumField() {
-			field := ct.Type().Field(i)
-			name := field.Type.Name()
-			if name == "BaseSchema" {
-				ct.FieldByName(name).Set(reflect.ValueOf(BaseSchema{
-					ID:        primitive.NewObjectID(),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}))
-			} else if name == "BaseTimestamp" {
-				ct.FieldByName(name).Set(reflect.ValueOf(BaseTimestamp{
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}))
-			}
+		_, err := m.serializeData(v, "insert")
+		if err != nil {
+			return nil, err
 		}
 		data = append(data, v)
+	}
+
+	err := ExecutePreHook(CreateMany, m, input)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := m.Collection.InsertMany(m.Ctx, data)
@@ -68,6 +59,10 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 		return nil, err
 	}
 
+	err = ExecutePostHook(CreateMany, m, result)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -77,19 +72,26 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 // Finally, it performs the update operation using UpdateOne with the $set operator.
 // Returns an error if the update operation fails.
 func (m *Model[M]) Update(filter interface{}, data *M) error {
+	err := ExecutePreHook(Update, m, filter, data)
+	if err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
 	}
 
-	if m.option.Validation {
-		err := validator.Scanner(data)
-		if err != nil {
-			return err
-		}
+	update, err := m.serializeData(data, "update")
+	if err != nil {
+		return err
 	}
-	update := m.serializeData(data, "update")
 	_, err = m.Collection.UpdateOne(m.Ctx, query, bson.D{{Key: "$set", Value: update}})
+	if err != nil {
+		return err
+	}
+
+	err = ExecutePostHook(Update, m)
 	if err != nil {
 		return err
 	}
@@ -103,20 +105,27 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 // Finally, it performs the update operation using UpdateMany with the $set operator.
 // Returns an error if the update operation fails.
 func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
+	err := ExecutePreHook(UpdateMany, m, filter, data)
+	if err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
 	}
 
-	if m.option.Validation {
-		err := validator.Scanner(data)
-		if err != nil {
-			return err
-		}
+	update, err := m.serializeData(data, "update")
+	if err != nil {
+		return err
 	}
-	update := m.serializeData(data, "update")
 
 	_, err = m.Collection.UpdateMany(m.Ctx, query, bson.D{{Key: "$set", Value: update}})
+	if err != nil {
+		return err
+	}
+
+	err = ExecutePostHook(UpdateMany, m)
 	if err != nil {
 		return err
 	}
@@ -129,12 +138,22 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 // Finally, it performs the delete operation using DeleteOne.
 // Returns an error if the delete operation fails.
 func (m *Model[M]) Delete(filter interface{}) error {
+	err := ExecutePreHook(Delete, m, filter)
+	if err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
 	}
 
 	_, err = m.Collection.DeleteOne(m.Ctx, query)
+	if err != nil {
+		return err
+	}
+
+	err = ExecutePostHook(Delete, m)
 	if err != nil {
 		return err
 	}
@@ -147,12 +166,22 @@ func (m *Model[M]) Delete(filter interface{}) error {
 // Finally, it performs the delete operation using DeleteMany.
 // Returns an error if the delete operation fails.
 func (m *Model[M]) DeleteMany(filter interface{}) error {
+	err := ExecutePreHook(DeleteMany, m, filter)
+	if err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
 	}
 
 	_, err = m.Collection.DeleteMany(m.Ctx, query)
+	if err != nil {
+		return err
+	}
+
+	err = ExecutePostHook(DeleteMany, m)
 	if err != nil {
 		return err
 	}
@@ -169,7 +198,24 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 // If mutation is "update", it sets the updatedAt to the current time.
 // The given data must be a struct.
 // It returns the validated data as a bson.E slice.
-func (m *Model[M]) serializeData(data *M, mutation string) []bson.E {
+func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
+	if m.option.Validation {
+		err := ExecutePreHook(Validate, m, data)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validator.Scanner(data)
+		if err != nil {
+			return nil, err
+		}
+
+		err = ExecutePostHook(Validate, m)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	upsert := []bson.E{}
 
 	if mutation == "insert" {
@@ -180,6 +226,11 @@ func (m *Model[M]) serializeData(data *M, mutation string) []bson.E {
 			if name == "BaseSchema" {
 				ct.FieldByName(name).Set(reflect.ValueOf(BaseSchema{
 					ID:        primitive.NewObjectID(),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}))
+			} else if name == "BaseTimestamp" {
+				ct.FieldByName(name).Set(reflect.ValueOf(BaseTimestamp{
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}))
@@ -214,5 +265,5 @@ func (m *Model[M]) serializeData(data *M, mutation string) []bson.E {
 		}
 	}
 
-	return upsert
+	return upsert, nil
 }

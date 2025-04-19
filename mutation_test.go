@@ -98,3 +98,27 @@ func Test_Mutation(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, reCheck)
 }
+
+func Test_Fail(t *testing.T) {
+	type Failed struct {
+		mongoose.BaseSchema `bson:"inline"`
+		Name                string `bson:"name"`
+	}
+
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[Failed]("faileds")
+	model.SetConnect(connect)
+
+	err := model.Update("abc", nil)
+	assert.NotNil(t, err)
+
+	err = model.UpdateMany("abc", nil)
+	assert.NotNil(t, err)
+
+	err = model.Delete("abc")
+	assert.NotNil(t, err)
+
+	err = model.DeleteMany("abc")
+	assert.NotNil(t, err)
+}
