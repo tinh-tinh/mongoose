@@ -2,12 +2,15 @@ package mongoose
 
 import (
 	"context"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
+
+type Config interface {
+	string | *options.ClientOptions
+}
 
 type Connect struct {
 	Client *mongo.Client
@@ -15,26 +18,24 @@ type Connect struct {
 	DB     string
 }
 
-// New creates a new Connect instance by establishing a connection to a MongoDB
-// database using the provided URI. It returns a pointer to the Connect struct,
-// which contains the MongoDB client, context, and the database name extracted
-// from the URI. If the connection fails, the function will panic.
-func New(uri string, opts ...*options.ClientOptions) *Connect {
-	// Parse the URI
-	cs, err := connstring.ParseAndValidate(uri)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to parse MongoDB URI: %v\n", err))
-	}
-
-	connectOptions := *options.Client().ApplyURI(uri)
-
-	if len(opts) > 0 {
-		mergeOpts := append(opts, &connectOptions)
-		connectOptions = *options.MergeClientOptions(mergeOpts...)
+func New[C Config](cfg C) *Connect {
+	// You can use type switch if you need runtime behavior
+	var connectOptions *options.ClientOptions
+	var cs *connstring.ConnString
+	switch v := any(cfg).(type) {
+	case string:
+		// handle string
+		connectOptions = options.Client().ApplyURI(v)
+		cs, _ = connstring.ParseAndValidate(v)
+	case *options.ClientOptions:
+		// handle options
+		connectOptions = v
+	default:
+		panic("config is invalid")
 	}
 
 	ctx := context.TODO()
-	client, err := mongo.Connect(ctx, &connectOptions)
+	client, err := mongo.Connect(ctx, connectOptions)
 	if err != nil {
 		panic(err)
 	}
