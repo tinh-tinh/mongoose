@@ -10,13 +10,7 @@ import (
 )
 
 func Test_Connect(t *testing.T) {
-	loggerOptions := options.
-		Logger().
-		SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
-
-	connect := mongoose.New(os.Getenv("MONGO_URI"), &options.ClientOptions{
-		LoggerOptions: loggerOptions,
-	})
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 	err := connect.Ping()
 	require.Nil(t, err)
@@ -25,6 +19,13 @@ func Test_Connect(t *testing.T) {
 func Test_ConnectFail(t *testing.T) {
 	require.Panics(t, func() {
 		connect := mongoose.New("http://localhost:27017")
+		require.Nil(t, connect)
+	})
+}
+
+func Test_ConnecPanic(t *testing.T) {
+	require.Panics(t, func() {
+		connect := mongoose.New[*options.ClientOptions](nil)
 		require.Nil(t, connect)
 	})
 }
