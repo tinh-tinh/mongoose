@@ -99,6 +99,15 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 	return nil
 }
 
+func (m *Model[M]) UpdateByID(id interface{}, data *M) error {
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return err
+	}
+
+	return m.Update(query, data)
+}
+
 // UpdateMany updates multiple documents in the collection based on the provided filter and new data.
 // It converts the filter to a BSON document using ToDoc.
 // The new data is validated and prepared for update using m.validData.
@@ -159,6 +168,14 @@ func (m *Model[M]) Delete(filter interface{}) error {
 	}
 
 	return nil
+}
+
+func (m *Model[M]) DeleteByID(id interface{}) error {
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return err
+	}
+	return m.Delete(query)
 }
 
 // DeleteMany deletes multiple documents in the collection based on the provided filter.

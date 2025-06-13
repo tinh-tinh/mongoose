@@ -2,6 +2,7 @@ package mongoose
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"reflect"
 	"slices"
@@ -230,4 +231,28 @@ func ToDoc(v interface{}) (doc *bson.D, err error) {
 
 	err = bson.Unmarshal(data, &doc)
 	return
+}
+
+func (m *Model[M]) getQueryId(id interface{}) (bson.M, error) {
+	var query bson.M
+
+	if m.option.ID {
+		switch v := id.(type) {
+		case string:
+			objId, err := primitive.ObjectIDFromHex(id.(string))
+			if err != nil {
+				return nil, err
+			}
+			query = bson.M{"_id": objId}
+		case primitive.ObjectID:
+			query = bson.M{"_id": id}
+		default:
+			return nil, fmt.Errorf("not support type %v", v)
+		}
+
+	} else {
+		query = bson.M{"_id": id}
+	}
+
+	return query, nil
 }
