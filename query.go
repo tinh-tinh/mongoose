@@ -2,7 +2,6 @@ package mongoose
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -30,17 +29,9 @@ type QueriesOptions struct {
 // cannot be decoded. If no document matches the id, the function returns
 // nil, nil.
 func (m *Model[M]) FindByID(id interface{}, opt ...QueryOptions) (*M, error) {
-	var query bson.M
-
-	if m.option.ID {
-		objId, err := primitive.ObjectIDFromHex(id.(string))
-		if err != nil {
-			return nil, err
-		}
-
-		query = bson.M{"_id": objId}
-	} else {
-		query = bson.M{"_id": id}
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return nil, err
 	}
 
 	return m.FindOne(query, opt...)
@@ -121,17 +112,9 @@ func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options
 // FindByIDAndUpdate returns an error if there is a problem with the query or the document
 // cannot be decoded. If no document matches the id, the function returns nil, nil.
 func (m *Model[M]) FindByIDAndUpdate(id any, data *M, opt ...*options.FindOneAndUpdateOptions) (*M, error) {
-	var query bson.M
-
-	if m.option.ID {
-		objId, err := primitive.ObjectIDFromHex(id.(string))
-		if err != nil {
-			return nil, err
-		}
-
-		query = bson.M{"_id": objId}
-	} else {
-		query = bson.M{"_id": id}
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return nil, err
 	}
 
 	return m.FindOneAndUpdate(query, data, opt...)
@@ -177,18 +160,11 @@ func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneA
 // FindByIDAndDelete returns an error if there is a problem with the query or the document cannot
 // be decoded. If no document matches the id, the function returns nil, nil.
 func (m *Model[M]) FindByIDAndDelete(id any, opt ...*options.FindOneAndDeleteOptions) (*M, error) {
-	var query bson.M
-
-	if m.option.ID {
-		objId, err := primitive.ObjectIDFromHex(id.(string))
-		if err != nil {
-			return nil, err
-		}
-
-		query = bson.M{"_id": objId}
-	} else {
-		query = bson.M{"_id": id}
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return nil, err
 	}
+
 	return m.FindOneAndDelete(query, opt...)
 }
 
@@ -240,17 +216,9 @@ func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*option
 // FindByIDAndReplace returns an error if there is a problem with the query or the document cannot
 // be decoded. If no document matches the id, the function returns nil, nil.
 func (m *Model[M]) FindByIDAndReplace(id any, data *M, opt ...*options.FindOneAndReplaceOptions) (*M, error) {
-	var query bson.M
-
-	if m.option.ID {
-		objId, err := primitive.ObjectIDFromHex(id.(string))
-		if err != nil {
-			return nil, err
-		}
-
-		query = bson.M{"_id": objId}
-	} else {
-		query = bson.M{"_id": id}
+	query, err := m.getQueryId(id)
+	if err != nil {
+		return nil, err
 	}
 
 	return m.FindOneAndReplace(query, data, opt...)

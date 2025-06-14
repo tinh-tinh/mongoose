@@ -81,6 +81,9 @@ func Test_Query(t *testing.T) {
 	assert.NotNil(t, first)
 	assert.Equal(t, first, firstID)
 
+	_, err = model.FindByID(true)
+	assert.NotNil(t, err)
+
 	// TestFindOptions
 	data, err = model.Find(nil, mongoose.QueriesOptions{
 		Sort:       bson.D{{Key: "name", Value: 1}},
@@ -125,6 +128,11 @@ func Test_Query(t *testing.T) {
 		reLast, err := model.FindByID(last.ID.Hex())
 		assert.Nil(t, err)
 		assert.Equal(t, "xyz", reLast.Status)
+
+		_, err = model.FindByIDAndUpdate(true, &Task{
+			Status: "xyz",
+		})
+		assert.NotNil(t, err)
 	}
 
 	// TestFindOneAndReplace
@@ -149,6 +157,10 @@ func Test_Query(t *testing.T) {
 	assert.Equal(t, "ghi", reCheck.Status)
 	assert.Equal(t, "", reCheck.Name)
 
+	_, err = model.FindByIDAndReplace(true, &Task{
+		Status: "xyz",
+	})
+	assert.NotNil(t, err)
 	// TestFindOneAndDelete
 	_, err = model.FindOneAndDelete(&QueryTask{Name: "1"})
 	assert.Nil(t, err)
@@ -166,6 +178,9 @@ func Test_Query(t *testing.T) {
 	reCheck, err = model.FindByID(first.ID.Hex())
 	assert.Nil(t, err)
 	assert.Nil(t, reCheck)
+
+	_, err = model.FindByIDAndDelete(true)
+	assert.NotNil(t, err)
 }
 
 func Test_NotTimestamp(t *testing.T) {

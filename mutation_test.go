@@ -68,6 +68,21 @@ func Test_Mutation(t *testing.T) {
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, "abc", reFirst.Status)
+
+		err = model.UpdateByID(reFirst.ID, &Task{
+			Status: "mno",
+		})
+		assert.Nil(t, err)
+		reFirst, err = model.FindOne(&QueryTask{
+			Name: firstOne.Name,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, "mno", reFirst.Status)
+
+		err = model.UpdateByID("true", &Task{
+			Status: "mno",
+		})
+		assert.NotNil(t, err)
 	}
 
 	// TestUpdateMany
@@ -89,6 +104,16 @@ func Test_Mutation(t *testing.T) {
 	reCheck, err = model.FindOne(&QueryTask{Name: "2"})
 	assert.Nil(t, err)
 	assert.Nil(t, reCheck)
+
+	firstOne, err = model.FindOne(nil)
+	assert.Nil(t, err)
+	if firstOne != nil {
+		err = model.DeleteByID(firstOne.ID)
+		assert.Nil(t, err)
+	}
+
+	err = model.DeleteByID(true)
+	assert.NotNil(t, err)
 
 	// TestDeleteMany
 	err = model.DeleteMany(&QueryTask{Name: "3"})
