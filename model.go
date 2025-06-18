@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tinh-tinh/tinhtinh/v2/common"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -53,19 +54,19 @@ type ModelOptions struct {
 // name is the name of the collection in the database
 // the returned Model[M] is used to interact with the collection in the database
 func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
-	defaultOption := &ModelOptions{
+	defaultOption := ModelOptions{
 		ID:         true,
 		Timestamp:  true,
 		Validation: true,
 	}
 
 	if len(opts) > 0 {
-		defaultOption = &opts[0]
+		defaultOption = common.MergeStruct(opts...)
 	}
 
 	return &Model[M]{
 		name:   name,
-		option: defaultOption,
+		option: &defaultOption,
 	}
 }
 
