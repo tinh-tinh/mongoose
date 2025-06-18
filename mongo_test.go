@@ -3,6 +3,7 @@ package mongoose_test
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tinh-tinh/mongoose/v2"
@@ -25,7 +26,20 @@ func Test_ConnectFail(t *testing.T) {
 
 func Test_ConnecPanic(t *testing.T) {
 	require.Panics(t, func() {
-		connect := mongoose.New[*options.ClientOptions](nil)
+		connect := mongoose.New(mongoose.Options{})
+		require.Nil(t, connect)
+	})
+}
+
+func Test_Retry(t *testing.T) {
+	require.Panics(t, func() {
+		connect := mongoose.New(mongoose.Options{
+			ClientOptions: options.Client().ApplyURI("MONGO_URI"),
+			RetryOptions: mongoose.RetryOptions{
+				Retry: 3,
+				Delay: 1 * time.Second, // 1 second
+			},
+		})
 		require.Nil(t, connect)
 	})
 }
