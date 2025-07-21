@@ -1,35 +1,44 @@
 package mongoose_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinh-tinh/mongoose/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestAggregate(t *testing.T) {
-	type Department struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-	}
-	type Employee struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string             `bson:"name"`
-		Age                 int                `bson:"age"`
-		DepartmentID        primitive.ObjectID `bson:"departmentID"`
-		Department          *Department        `bson:"department" ref:"departmentID->departments"`
-	}
+type Department struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+}
 
+func (d Department) CollectionName() string {
+	return "departments"
+}
+
+type Employee struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string             `bson:"name"`
+	Age                 int                `bson:"age"`
+	DepartmentID        primitive.ObjectID `bson:"departmentID"`
+	Department          *Department        `bson:"department" ref:"departmentID->departments"`
+}
+
+func (e Employee) CollectionName() string {
+	return "employees"
+}
+
+func TestAggregate(t *testing.T) {
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 
-	employeeModel := mongoose.NewModel[Employee]("employees")
+	employeeModel := mongoose.NewModel[Employee]()
 	employeeModel.SetConnect(connect)
 
-	departmentModel := mongoose.NewModel[Department]("departments")
+	departmentModel := mongoose.NewModel[Department]()
 	departmentModel.SetConnect(connect)
 
 	_, err := departmentModel.Create(&Department{
@@ -51,31 +60,21 @@ func TestAggregate(t *testing.T) {
 		Ref: []string{"departmentID"},
 	})
 	require.Nil(t, err)
-	for _, emp := range employees {
-		fmt.Println(emp.Department)
+	require.NotNil(t, employees)
+	if len(employees) == 0 {
+		assert.NotNil(t, employees[0].Department)
 	}
 }
 
 func TestFindOne(t *testing.T) {
-	type Department struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-	}
-	type Employee struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string             `bson:"name"`
-		Age                 int                `bson:"age"`
-		DepartmentID        primitive.ObjectID `bson:"departmentID"`
-		Department          *Department        `bson:"department" ref:"departmentID->departments"`
-	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 
-	employeeModel := mongoose.NewModel[Employee]("employees")
+	employeeModel := mongoose.NewModel[Employee]()
 	employeeModel.SetConnect(connect)
 
-	departmentModel := mongoose.NewModel[Department]("departments")
+	departmentModel := mongoose.NewModel[Department]()
 	departmentModel.SetConnect(connect)
 
 	employees, err := employeeModel.FindOne(nil, mongoose.QueryOptions{

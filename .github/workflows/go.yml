@@ -30,6 +30,9 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Clear cache
+      run: go clean -testcache
+
     - name: Run with secret and test
       env: 
         MONGO_URI: ${{ secrets.MONGO_URI }}

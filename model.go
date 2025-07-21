@@ -33,7 +33,6 @@ type ModelCommon interface {
 }
 
 type Model[M any] struct {
-	name       string
 	option     *ModelOptions
 	docs       []bson.E
 	connect    *Connect
@@ -53,7 +52,7 @@ type ModelOptions struct {
 // NewModel returns a new instance of Model[M] with the given connect and name
 // name is the name of the collection in the database
 // the returned Model[M] is used to interact with the collection in the database
-func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
+func NewModel[M any](opts ...ModelOptions) *Model[M] {
 	defaultOption := ModelOptions{
 		ID:         true,
 		Timestamp:  true,
@@ -65,7 +64,6 @@ func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
 	}
 
 	return &Model[M]{
-		name:   name,
 		option: &defaultOption,
 	}
 }
@@ -76,7 +74,7 @@ func NewModel[M any](name string, opts ...ModelOptions) *Model[M] {
 func (m *Model[M]) SetConnect(connect *Connect) {
 	m.Ctx = connect.Ctx
 	m.connect = connect
-	m.Collection = connect.Client.Database(connect.DB).Collection(m.name)
+	m.Collection = connect.Client.Database(connect.DB).Collection(m.GetName())
 	if !reflect.ValueOf(m.idx).IsZero() {
 		_, err := m.Collection.Indexes().CreateOne(m.Ctx, m.idx)
 		if err != nil {
@@ -91,7 +89,17 @@ func (m *Model[M]) SetContext(ctx context.Context) {
 
 // GetName returns the name of the collection in the database
 func (m *Model[M]) GetName() string {
-	return m.name
+	var model M
+	ctModel := reflect.ValueOf(&model).Elem()
+
+	fnc := ctModel.MethodByName("CollectionName")
+	var name string
+	if fnc.IsValid() {
+		name = fnc.Call(nil)[0].String()
+	} else {
+		name = common.GetStructName(model)
+	}
+	return name
 }
 
 func (m *Model[M]) Index(idx bson.D, unique bool) {

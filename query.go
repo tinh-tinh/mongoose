@@ -2,6 +2,7 @@ package mongoose
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -142,6 +143,9 @@ func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneA
 	var model M
 	err = m.Collection.FindOneAndDelete(m.Ctx, query, opt...).Decode(&model)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, err
 	}
 

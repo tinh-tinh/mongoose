@@ -2,6 +2,7 @@ package mongoose_test
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -11,13 +12,19 @@ import (
 	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
+type Book struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Title               string `bson:"title"`
+	Author              string `bson:"author"`
+}
+
+func (b Book) CollectionName() string {
+	return "Book"
+}
+
 func Test_Module(t *testing.T) {
-	type Book struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Title               string `bson:"title"`
-		Author              string `bson:"author"`
-	}
-	bookModel := mongoose.NewModel[Book]("Book")
+
+	bookModel := mongoose.NewModel[Book]()
 
 	bookController := func(module core.Module) core.Controller {
 		ctrl := module.NewController("books")
@@ -70,9 +77,15 @@ func Test_Module(t *testing.T) {
 	}
 
 	appModule := func() core.Module {
+		uri := os.Getenv("MONGO_URI")
+		u, _ := url.Parse(uri)
+
+		u.Path = "/test"
+		modifiedURI := u.String()
+
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Modules{
-				mongoose.ForRoot(os.Getenv("MONGO_URI") + "/test"),
+				mongoose.ForRoot(modifiedURI),
 				bookModule,
 			},
 		})
@@ -102,12 +115,7 @@ func Test_Module(t *testing.T) {
 }
 
 func Test_ModuleFactory(t *testing.T) {
-	type Book struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Title               string `bson:"title"`
-		Author              string `bson:"author"`
-	}
-	bookModel := mongoose.NewModel[Book]("Book")
+	bookModel := mongoose.NewModel[Book]()
 
 	bookController := func(module core.Module) core.Controller {
 		ctrl := module.NewController("books")
@@ -160,10 +168,16 @@ func Test_ModuleFactory(t *testing.T) {
 	}
 
 	appModule := func() core.Module {
+		uri := os.Getenv("MONGO_URI")
+		u, _ := url.Parse(uri)
+
+		u.Path = "/test"
+		modifiedURI := u.String()
+
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Modules{
 				mongoose.ForRootFactory(func(module core.Module) *mongoose.Connect {
-					return mongoose.New(os.Getenv("MONGO_URI") + "/test")
+					return mongoose.New(modifiedURI)
 				}),
 				bookModule,
 			},

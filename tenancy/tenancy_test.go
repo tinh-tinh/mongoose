@@ -13,13 +13,17 @@ import (
 	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
-func Test_Module(t *testing.T) {
-	type Book struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Title               string `bson:"title"`
-		Author              string `bson:"author"`
-	}
+type Book struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Title               string `bson:"title"`
+	Author              string `bson:"author"`
+}
 
+func (b Book) CollectionName() string {
+	return "books"
+}
+
+func Test_Module(t *testing.T) {
 	bookController := func(module core.Module) core.Controller {
 		ctrl := module.NewController("books")
 
@@ -48,7 +52,7 @@ func Test_Module(t *testing.T) {
 	bookModule := func(module core.Module) core.Module {
 		bookMod := module.New(core.NewModuleOptions{
 			Imports: []core.Modules{
-				tenancy.ForFeature(mongoose.NewModel[Book]("Book")),
+				tenancy.ForFeature(mongoose.NewModel[Book]()),
 			},
 			Controllers: []core.Controllers{bookController},
 		})
