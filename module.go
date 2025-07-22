@@ -1,6 +1,8 @@
 package mongoose
 
 import (
+	"reflect"
+
 	"github.com/tinh-tinh/tinhtinh/v2/common"
 	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
@@ -87,13 +89,17 @@ func InjectConnect(module core.Module) *Connect {
 // The model provider is created by the ForFeature function.
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
-func InjectModel[M any](module core.Module, name ...string) *Model[M] {
-	var m M
+func InjectModel[M any](module core.Module) *Model[M] {
+	var model M
+	ctModel := reflect.ValueOf(&model).Elem()
+
+	fnc := ctModel.MethodByName("CollectionName")
+
 	var modelName string
-	if len(name) > 0 {
-		modelName = name[0]
+	if fnc.IsValid() {
+		modelName = fnc.Call(nil)[0].String()
 	} else {
-		modelName = common.GetStructName(&m)
+		modelName = common.GetStructName(model)
 	}
 	data, ok := module.Ref(GetModelName(modelName)).(*Model[M])
 	if !ok {

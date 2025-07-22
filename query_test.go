@@ -9,20 +9,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Test_Query(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
+type QueryTask struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
 
-	type QueryTask struct {
+func (t QueryTask) CollectionName() string {
+	return "queries"
+}
+
+func Test_Query(t *testing.T) {
+	type FindParamTask struct {
 		Name string `bson:"name"`
 	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Task]("queries")
+	model := mongoose.NewModel[QueryTask]()
 	model.SetConnect(connect)
 
 	total, err := model.Count(nil)
@@ -32,7 +36,7 @@ func Test_Query(t *testing.T) {
 		err := model.DeleteMany(nil)
 		assert.Nil(t, err)
 	}
-	_, err = model.CreateMany([]*Task{
+	_, err = model.CreateMany([]*QueryTask{
 		{
 			Name:   "1",
 			Status: "true",
@@ -65,12 +69,12 @@ func Test_Query(t *testing.T) {
 	assert.Nil(t, err)
 
 	// TestFind
-	data, err := model.Find(&QueryTask{Name: "2"})
+	data, err := model.Find(&FindParamTask{Name: "2"})
 	assert.Nil(t, err)
 	assert.Greater(t, len(data), 0)
 
 	// TestFindOne
-	first, err := model.FindOne(&QueryTask{Name: "2"})
+	first, err := model.FindOne(&FindParamTask{Name: "2"})
 	assert.Nil(t, err)
 	assert.NotNil(t, first)
 	assert.Equal(t, "2", first.Name)
@@ -107,11 +111,11 @@ func Test_Query(t *testing.T) {
 	assert.Equal(t, "", firstOne.Status)
 
 	// TestFindOneAndUpdate
-	found, err := model.FindOneAndUpdate(&QueryTask{Name: "3"}, &Task{Status: "abc"})
+	found, err := model.FindOneAndUpdate(&FindParamTask{Name: "3"}, &QueryTask{Status: "abc"})
 	assert.Nil(t, err)
 	assert.Equal(t, "3", found.Name)
 
-	reFirst, err := model.FindOne(&QueryTask{Name: "3"})
+	reFirst, err := model.FindOne(&FindParamTask{Name: "3"})
 	assert.Nil(t, err)
 	assert.Equal(t, "abc", reFirst.Status)
 
@@ -120,7 +124,7 @@ func Test_Query(t *testing.T) {
 	assert.Nil(t, err)
 
 	if last != nil {
-		_, err := model.FindByIDAndUpdate(last.ID.Hex(), &Task{
+		_, err := model.FindByIDAndUpdate(last.ID.Hex(), &QueryTask{
 			Status: "xyz",
 		})
 		assert.Nil(t, err)
@@ -129,14 +133,14 @@ func Test_Query(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "xyz", reLast.Status)
 
-		_, err = model.FindByIDAndUpdate(true, &Task{
+		_, err = model.FindByIDAndUpdate(true, &QueryTask{
 			Status: "xyz",
 		})
 		assert.NotNil(t, err)
 	}
 
 	// TestFindOneAndReplace
-	found, err = model.FindOneAndReplace(&QueryTask{Name: "5"}, &Task{Status: "mno"})
+	found, err = model.FindOneAndReplace(&FindParamTask{Name: "5"}, &QueryTask{Status: "mno"})
 	assert.Nil(t, err)
 	assert.NotNil(t, found)
 
@@ -148,16 +152,17 @@ func Test_Query(t *testing.T) {
 	// TestFindByIDAndReplace
 	found, err = model.FindOne(&QueryTask{Name: "4"})
 	assert.Nil(t, err)
+	if found != nil {
+		updateFound, err := model.FindByIDAndReplace(found.ID.Hex(), &QueryTask{Status: "ghi"})
+		assert.Nil(t, err)
 
-	updateFound, err := model.FindByIDAndReplace(found.ID.Hex(), &Task{Status: "ghi"})
-	assert.Nil(t, err)
+		reCheck, err := model.FindByID(updateFound.ID.Hex())
+		assert.Nil(t, err)
+		assert.Equal(t, "ghi", reCheck.Status)
+		assert.Equal(t, "", reCheck.Name)
+	}
 
-	reCheck, err := model.FindByID(updateFound.ID.Hex())
-	assert.Nil(t, err)
-	assert.Equal(t, "ghi", reCheck.Status)
-	assert.Equal(t, "", reCheck.Name)
-
-	_, err = model.FindByIDAndReplace(true, &Task{
+	_, err = model.FindByIDAndReplace(true, &QueryTask{
 		Status: "xyz",
 	})
 	assert.NotNil(t, err)
@@ -175,7 +180,7 @@ func Test_Query(t *testing.T) {
 	_, err = model.FindByIDAndDelete(first.ID.Hex())
 	assert.Nil(t, err)
 
-	reCheck, err = model.FindByID(first.ID.Hex())
+	reCheck, err := model.FindByID(first.ID.Hex())
 	assert.Nil(t, err)
 	assert.Nil(t, reCheck)
 
@@ -183,16 +188,21 @@ func Test_Query(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+type SpecialTask struct {
+	ID     int    `bson:"_id"`
+	Name   string `bson:"name"`
+	Status string `bson:"status"`
+}
+
+func (s SpecialTask) CollectionName() string {
+	return "sp_tasks"
+}
+
 func Test_NotTimestamp(t *testing.T) {
-	type SpecialTask struct {
-		ID     int    `bson:"_id"`
-		Name   string `bson:"name"`
-		Status string `bson:"status"`
-	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[SpecialTask]("sp_tasks", mongoose.ModelOptions{
+	model := mongoose.NewModel[SpecialTask](mongoose.ModelOptions{
 		Timestamp: false,
 		ID:        false,
 	})
@@ -240,14 +250,9 @@ func Test_NotTimestamp(t *testing.T) {
 }
 
 func Test_FailedFind(t *testing.T) {
-	type Failed struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-	}
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Failed]("faileds")
+	model := mongoose.NewModel[Failed]()
 	model.SetConnect(connect)
 
 	_, err := model.FindOne("abc")

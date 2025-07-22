@@ -2,6 +2,7 @@ package tenancy
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/tinh-tinh/mongoose/v2"
 	"github.com/tinh-tinh/tinhtinh/v2/common"
@@ -104,12 +105,16 @@ func ForFeature(models ...mongoose.ModelCommon) core.Modules {
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
 func InjectModel[M any](module core.Module, ctx core.Ctx, name ...string) *mongoose.Model[M] {
-	var m M
+	var model M
+	ctModel := reflect.ValueOf(&model).Elem()
+
+	fnc := ctModel.MethodByName("CollectionName")
+
 	var modelName string
-	if len(name) > 0 {
-		modelName = name[0]
+	if fnc.IsValid() {
+		modelName = fnc.Call(nil)[0].String()
 	} else {
-		modelName = common.GetStructName(&m)
+		modelName = common.GetStructName(model)
 	}
 	data, ok := module.Ref(mongoose.GetModelName(modelName), ctx).(*mongoose.Model[M])
 	if !ok {

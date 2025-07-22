@@ -11,16 +11,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type Models struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Title               string `bson:"title"`
+	Author              string `bson:"author"`
+}
+
+func (b Models) CollectionName() string {
+	return "models"
+}
+
 func Test_Model(t *testing.T) {
-	type Book struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Title               string `bson:"title"`
-		Author              string `bson:"author"`
-	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Book]("models")
+	model := mongoose.NewModel[Models]()
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)
@@ -54,24 +59,28 @@ func Test_Model(t *testing.T) {
 	require.Equal(t, "xyz", reFirst.Title)
 }
 
+type Address struct {
+	Line    string `bson:"line"`
+	State   string `bson:"state"`
+	City    string `bson:"city"`
+	Country string `bson:"country"`
+}
+
+type Location struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Longitude           float64  `bson:"longitude"`
+	Latitude            float64  `bson:"latitude"`
+	Address             *Address `bson:"address"`
+}
+
+func (l Location) CollectionName() string {
+	return "recursive"
+}
+
 func Test_Recusive(t *testing.T) {
-	type Address struct {
-		Line    string `bson:"line"`
-		State   string `bson:"state"`
-		City    string `bson:"city"`
-		Country string `bson:"country"`
-	}
-
-	type Location struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Longitude           float64  `bson:"longitude"`
-		Latitude            float64  `bson:"latitude"`
-		Address             *Address `bson:"address"`
-	}
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Location]("recursive")
+	model := mongoose.NewModel[Location]()
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)
@@ -122,13 +131,17 @@ func Test_Recusive(t *testing.T) {
 	require.Equal(t, "country2", reFirst.Address.Country)
 }
 
+type User struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Email               string `bson:"email"`
+	Name                string `bson:"name"`
+}
+
+func (u User) CollectionName() string {
+	return "indexes"
+}
 func TestIndex(t *testing.T) {
-	type User struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Email               string `bson:"email"`
-		Name                string `bson:"name"`
-	}
-	userModel := mongoose.NewModel[User]("indexes")
+	userModel := mongoose.NewModel[User]()
 	userModel.Index(bson.D{{Key: "email", Value: 1}}, true)
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
@@ -141,18 +154,22 @@ func Test_ToDoc(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_Validator(t *testing.T) {
-	type Student struct {
-		mongoose.BaseTimestamp `bson:"inline"`
-		ID                     int    `bson:"_id"`
-		FirstName              string `bson:"firstName" validate:"isAlpha"`
-		LastName               string `bson:"lastName" validate:"isAlpha"`
-		Email                  string `bson:"email" validate:"isEmail"`
-	}
+type Student struct {
+	mongoose.BaseTimestamp `bson:"inline"`
+	ID                     int    `bson:"_id"`
+	FirstName              string `bson:"firstName" validate:"isAlpha"`
+	LastName               string `bson:"lastName" validate:"isAlpha"`
+	Email                  string `bson:"email" validate:"isEmail"`
+}
 
+func (s Student) CollectionName() string {
+	return "students"
+}
+
+func Test_Validator(t *testing.T) {
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Student]("students")
+	model := mongoose.NewModel[Student]()
 	model.SetConnect(connect)
 
 	err := model.DeleteMany(nil)

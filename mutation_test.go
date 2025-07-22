@@ -8,16 +8,21 @@ import (
 	"github.com/tinh-tinh/mongoose/v2"
 )
 
+type MutationTask struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
+
+func (t MutationTask) CollectionName() string {
+	return "mutations"
+}
+
 func Test_Mutation(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Task]("mutations")
+	model := mongoose.NewModel[MutationTask]()
 	model.SetConnect(connect)
 
 	// Clear before test
@@ -25,14 +30,14 @@ func Test_Mutation(t *testing.T) {
 	assert.Nil(t, err)
 
 	// TestCreate
-	_, err = model.Create(&Task{
+	_, err = model.Create(&MutationTask{
 		Name:   "1",
 		Status: "true",
 	})
 	assert.Nil(t, err)
 
 	// TestCreateMany
-	_, err = model.CreateMany([]*Task{
+	_, err = model.CreateMany([]*MutationTask{
 		{
 			Name:   "2",
 			Status: "true",
@@ -58,7 +63,7 @@ func Test_Mutation(t *testing.T) {
 	if firstOne != nil {
 		err := model.Update(&QueryTask{
 			Name: firstOne.Name,
-		}, &Task{
+		}, &MutationTask{
 			Status: "abc",
 		})
 		assert.Nil(t, err)
@@ -69,7 +74,7 @@ func Test_Mutation(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "abc", reFirst.Status)
 
-		err = model.UpdateByID(reFirst.ID, &Task{
+		err = model.UpdateByID(reFirst.ID, &MutationTask{
 			Status: "mno",
 		})
 		assert.Nil(t, err)
@@ -79,7 +84,7 @@ func Test_Mutation(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "mno", reFirst.Status)
 
-		err = model.UpdateByID("true", &Task{
+		err = model.UpdateByID("true", &MutationTask{
 			Status: "mno",
 		})
 		assert.NotNil(t, err)
@@ -88,7 +93,7 @@ func Test_Mutation(t *testing.T) {
 	// TestUpdateMany
 	err = model.UpdateMany(&QueryTask{
 		Name: "3",
-	}, &Task{
+	}, &MutationTask{
 		Status: "abc",
 	})
 	assert.Nil(t, err)
@@ -124,15 +129,19 @@ func Test_Mutation(t *testing.T) {
 	assert.Nil(t, reCheck)
 }
 
-func Test_Fail(t *testing.T) {
-	type Failed struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-	}
+type Failed struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+}
 
+func (f Failed) CollectionName() string {
+	return "faileds"
+}
+
+func Test_Fail(t *testing.T) {
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Failed]("faileds")
+	model := mongoose.NewModel[Failed]()
 	model.SetConnect(connect)
 
 	err := model.Update("abc", nil)

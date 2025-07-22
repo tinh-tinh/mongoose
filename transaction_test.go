@@ -14,17 +14,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
+type Order struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Code                string `bson:"code"`
+	Paid                int    `bson:"paid"`
+}
+
+func (o Order) CollectionName() string {
+	return "orders"
+}
 func TestTransaction(t *testing.T) {
-	type Order struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Code                string `bson:"code"`
-		Paid                int    `bson:"paid"`
-	}
 	type QueryOrder struct {
 		Code string `bson:"code"`
 	}
 
-	model := mongoose.NewModel[Order]("transactions")
+	model := mongoose.NewModel[Order]()
 	model.Index(bson.D{{Key: "code", Value: 1}}, true)
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))

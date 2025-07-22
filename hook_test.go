@@ -11,12 +11,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type PreTask struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
+
+func (p PreTask) CollectionName() string {
+	return "query_hooks"
+}
+
 func Test_Query_Pre_Hook(t *testing.T) {
-	type PreTask struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
 
 	type QueryTask struct {
 		Name string `bson:"name"`
@@ -24,7 +29,7 @@ func Test_Query_Pre_Hook(t *testing.T) {
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[PreTask]("query_hooks")
+	model := mongoose.NewModel[PreTask]()
 	model.SetConnect(connect)
 
 	model.Pre("find|count|findOne|findOneAndDelete|findOneAndReplace|findOneAndUpdate", func(params ...any) error {
@@ -56,20 +61,24 @@ func Test_Query_Pre_Hook(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_Query_Post_Hook(t *testing.T) {
-	type PostTask struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
+type PostTask struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
 
+func (p PostTask) CollectionName() string {
+	return "query_hooks"
+}
+
+func Test_Query_Post_Hook(t *testing.T) {
 	type QueryTask struct {
 		Name string `bson:"name"`
 	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[PostTask]("query_hooks")
+	model := mongoose.NewModel[PostTask]()
 	model.SetConnect(connect)
 
 	model.Post("find|count|findOne|findOneAndDelete|findOneAndReplace|findOneAndUpdate", func(params ...any) error {
@@ -135,16 +144,21 @@ func Test_Query_Post_Hook(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+type Task struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
+
+func (t Task) CollectionName() string {
+	return "mutation_hooks"
+}
+
 func Test_Mutation_Pre_Hook(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Task]("mutation_hooks")
+	model := mongoose.NewModel[Task]()
 	model.SetConnect(connect)
 
 	model.Pre("create|createMany|update|updateMany|delete|deleteMany", func(params ...any) error {
@@ -189,15 +203,9 @@ func Test_Mutation_Pre_Hook(t *testing.T) {
 }
 
 func Test_Mutation_Post_Hook(t *testing.T) {
-	type Task struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Task]("mutation_hooks")
+	model := mongoose.NewModel[Task]()
 	model.SetConnect(connect)
 
 	model.Post("create|createMany|update|updateMany|delete|deleteMany", func(params ...any) error {
@@ -241,17 +249,19 @@ func Test_Mutation_Post_Hook(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+type ModelBook struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Title               string `bson:"title"`
+	Author              string `bson:"author"`
+}
+
+func (b ModelBook) CollectionName() string {
+	return "model_hooks"
+}
 func Test_Save_Hook(t *testing.T) {
-
-	type Book struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Title               string `bson:"title"`
-		Author              string `bson:"author"`
-	}
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[Book]("model_hooks")
+	model := mongoose.NewModel[ModelBook]()
 	model.SetConnect(connect)
 
 	model.Pre(mongoose.Save, func(params ...any) error {
@@ -281,12 +291,17 @@ func Test_Save_Hook(t *testing.T) {
 	require.NotNil(t, err)
 }
 
+type ValidateHook struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Status              string `bson:"status"`
+}
+
+func (v ValidateHook) CollectionName() string {
+	return "validate_hooks"
+}
+
 func Test_Validate_Hook(t *testing.T) {
-	type PostTask struct {
-		mongoose.BaseSchema `bson:"inline"`
-		Name                string `bson:"name"`
-		Status              string `bson:"status"`
-	}
 
 	type QueryTask struct {
 		Name string `bson:"name"`
@@ -294,11 +309,11 @@ func Test_Validate_Hook(t *testing.T) {
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[PostTask]("validate_hooks")
+	model := mongoose.NewModel[ValidateHook]()
 	model.SetConnect(connect)
 
 	model.Pre(mongoose.Validate, func(params ...any) error {
-		docs := params[0].(*PostTask)
+		docs := params[0].(*ValidateHook)
 		if docs.Status == "abc" {
 			return errors.New("failed to save")
 		}
@@ -311,14 +326,14 @@ func Test_Validate_Hook(t *testing.T) {
 
 	err := model.Update(&QueryTask{
 		Name: "0",
-	}, &PostTask{
+	}, &ValidateHook{
 		Status: "abc",
 	})
 	assert.NotNil(t, err)
 
 	err = model.Update(&QueryTask{
 		Name: "0",
-	}, &PostTask{
+	}, &ValidateHook{
 		Status: "mno",
 	})
 	assert.NotNil(t, err)

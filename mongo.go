@@ -55,7 +55,7 @@ func New[C Config](cfg C) *Connect {
 		if retryOptions.Retry > 0 {
 			fmt.Printf("%s %s %s %s\n",
 				color.Green("MONGOOSE"),
-				color.White("Failed to connect to MongoDB:"),
+				color.White(fmt.Sprintf("Failed to connect to MongoDB: %v", cfg)),
 				color.Red(err.Error()),
 				color.Yellow(fmt.Sprintf("Retrying attempt remain %d", retryOptions.Retry)),
 			)
