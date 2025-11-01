@@ -9,6 +9,7 @@ import (
 	"github.com/tinh-tinh/mongoose/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Models struct {
@@ -142,7 +143,7 @@ func (u User) CollectionName() string {
 }
 func TestIndex(t *testing.T) {
 	userModel := mongoose.NewModel[User]()
-	userModel.Index(bson.D{{Key: "email", Value: 1}}, true)
+	userModel.Index(bson.D{{Key: "email", Value: 1}}, options.Index().SetUnique(true))
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")

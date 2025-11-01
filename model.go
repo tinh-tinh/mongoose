@@ -36,7 +36,7 @@ type Model[M any] struct {
 	option     *ModelOptions
 	docs       []bson.E
 	connect    *Connect
-	idx        mongo.IndexModel
+	indexes    []mongo.IndexModel
 	preHooks   []Hook[M]
 	postHooks  []Hook[M]
 	Ctx        context.Context
@@ -75,8 +75,9 @@ func (m *Model[M]) SetConnect(connect *Connect) {
 	m.Ctx = connect.Ctx
 	m.connect = connect
 	m.Collection = connect.Client.Database(connect.DB).Collection(m.GetName())
-	if !reflect.ValueOf(m.idx).IsZero() {
-		_, err := m.Collection.Indexes().CreateOne(m.Ctx, m.idx)
+
+	if len(m.indexes) > 0 {
+		_, err := m.Collection.Indexes().CreateMany(m.Ctx, m.indexes)
 		if err != nil {
 			log.Println(err)
 		}
@@ -102,12 +103,12 @@ func (m *Model[M]) GetName() string {
 	return name
 }
 
-func (m *Model[M]) Index(idx bson.D, unique bool) {
+func (m *Model[M]) Index(idx bson.D, opt *options.IndexOptions) {
 	indexModel := mongo.IndexModel{
 		Keys:    idx,
-		Options: options.Index().SetUnique(unique),
+		Options: opt,
 	}
-	m.idx = indexModel
+	m.indexes = append(m.indexes, indexModel)
 }
 
 // Set sets the data of the model to the given data.
