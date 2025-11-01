@@ -29,7 +29,7 @@ func TestTransaction(t *testing.T) {
 	}
 
 	model := mongoose.NewModel[Order]()
-	model.Index(bson.D{{Key: "code", Value: 1}}, true)
+	model.Index(bson.D{{Key: "code", Value: 1}}, options.Index().SetUnique(true))
 
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")

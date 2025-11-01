@@ -176,7 +176,7 @@ func Test_ModuleFactory(t *testing.T) {
 
 		module := core.NewModule(core.NewModuleOptions{
 			Imports: []core.Modules{
-				mongoose.ForRootFactory(func(module core.Module) *mongoose.Connect {
+				mongoose.ForRootFactory(func(module core.RefProvider) *mongoose.Connect {
 					return mongoose.New(modifiedURI)
 				}),
 				bookModule,

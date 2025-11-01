@@ -24,7 +24,7 @@ func ForRoot[C Config](cfg C) core.Modules {
 	}
 }
 
-type ConfigFactory func(module core.Module) *Connect
+type ConfigFactory func(ref core.RefProvider) *Connect
 
 func ForRootFactory(factory ConfigFactory) core.Modules {
 	return func(module core.Module) core.Module {
