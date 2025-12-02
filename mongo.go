@@ -68,7 +68,7 @@ func New[C Config](cfg C) *Connect {
 				},
 			})
 		}
-		panic(err)
+		panic(fmt.Sprintf("Failed to connect with url: %v because %v", cfg, err.Error()))
 	}
 
 	return &Connect{
