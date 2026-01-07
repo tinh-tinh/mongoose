@@ -55,7 +55,7 @@ func New[C Config](cfg C) *Connect {
 		if retryOptions.Retry > 0 {
 			fmt.Printf("%s %s %s %s\n",
 				color.Green("MONGOOSE"),
-				color.White(fmt.Sprintf("Failed to connect to MongoDB: %v", cfg)),
+				color.White("Failed to connect to MongoDB"),
 				color.Red(err.Error()),
 				color.Yellow(fmt.Sprintf("Retrying attempt remain %d", retryOptions.Retry)),
 			)
@@ -68,7 +68,7 @@ func New[C Config](cfg C) *Connect {
 				},
 			})
 		}
-		panic(fmt.Sprintf("Failed to connect with url: %v because %v", cfg, err.Error()))
+		panic(fmt.Sprintf("Failed to connect to MongoDB: %v", err.Error()))
 	}
 
 	return &Connect{
