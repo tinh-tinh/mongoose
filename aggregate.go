@@ -30,6 +30,10 @@ func (m *Model[M]) FindOne(filter interface{}, opts ...QueryOptions) (*M, error)
 		return nil, err
 	}
 
+	if err := m.sanitizeFilter(filter); err != nil {
+		return nil, err
+	}
+
 	pipeline := []bson.M{}
 	// Filter by search
 
@@ -105,6 +109,10 @@ func (m *Model[M]) FindOne(filter interface{}, opts ...QueryOptions) (*M, error)
 func (m *Model[M]) Find(filter interface{}, opts ...QueriesOptions) ([]*M, error) {
 	err := ExecutePreHook(Find, m, filter)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := m.sanitizeFilter(filter); err != nil {
 		return nil, err
 	}
 

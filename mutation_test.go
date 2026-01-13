@@ -156,3 +156,47 @@ func Test_Fail(t *testing.T) {
 	err = model.DeleteMany("abc")
 	assert.NotNil(t, err)
 }
+
+// Test_StrictFilters_Mutation tests that StrictFilters blocks dangerous operators in mutation functions
+func Test_StrictFilters_Mutation(t *testing.T) {
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[MutationTask](mongoose.ModelOptions{
+		StrictFilters: true,
+	})
+	model.SetConnect(connect)
+
+	maliciousFilter := map[string]interface{}{
+		"name": map[string]interface{}{"$ne": ""},
+	}
+
+	// Test Update blocks dangerous operators
+	err := model.Update(maliciousFilter, &MutationTask{})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test UpdateMany blocks dangerous operators
+	err = model.UpdateMany(maliciousFilter, &MutationTask{})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test Delete blocks dangerous operators
+	err = model.Delete(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test DeleteMany blocks dangerous operators
+	err = model.DeleteMany(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test safe struct filter is allowed
+	type SafeFilter struct {
+		Name string `bson:"name"`
+	}
+	err = model.Delete(&SafeFilter{Name: "nonexistent"})
+	// This should not error due to sanitization
+	if err != nil {
+		assert.NotContains(t, err.Error(), "dangerous MongoDB operator")
+	}
+}

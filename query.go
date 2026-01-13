@@ -49,6 +49,10 @@ func (m *Model[M]) Count(filter interface{}) (int64, error) {
 		return 0, err
 	}
 
+	if err := m.sanitizeFilter(filter); err != nil {
+		return 0, err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return 0, err
@@ -78,6 +82,10 @@ func (m *Model[M]) Count(filter interface{}) (int64, error) {
 func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options.FindOneAndUpdateOptions) (*M, error) {
 	err := ExecutePreHook(FindOneAndUpdate, m, filter, data)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := m.sanitizeFilter(filter); err != nil {
 		return nil, err
 	}
 
@@ -135,6 +143,10 @@ func (m *Model[M]) FindOneAndDelete(filter interface{}, opt ...*options.FindOneA
 		return nil, err
 	}
 
+	if err := m.sanitizeFilter(filter); err != nil {
+		return nil, err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return nil, err
@@ -184,6 +196,10 @@ func (m *Model[M]) FindByIDAndDelete(id any, opt ...*options.FindOneAndDeleteOpt
 func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*options.FindOneAndReplaceOptions) (*M, error) {
 	err := ExecutePreHook(FindOneAndReplace, m, filter, data)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := m.sanitizeFilter(filter); err != nil {
 		return nil, err
 	}
 

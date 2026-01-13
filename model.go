@@ -44,9 +44,10 @@ type Model[M any] struct {
 }
 
 type ModelOptions struct {
-	Timestamp  bool
-	ID         bool
-	Validation bool
+	Timestamp     bool
+	ID            bool
+	Validation    bool
+	StrictFilters bool // When true, rejects filters containing MongoDB operators
 }
 
 // NewModel returns a new instance of Model[M] with the given connect and name
@@ -241,6 +242,15 @@ func ToDoc(v interface{}) (doc *bson.D, err error) {
 
 	err = bson.Unmarshal(data, &doc)
 	return
+}
+
+// sanitizeFilter checks if the filter contains dangerous MongoDB operators
+// when StrictFilters is enabled on the model.
+func (m *Model[M]) sanitizeFilter(filter interface{}) error {
+	if m.option.StrictFilters {
+		return SanitizeFilter(filter)
+	}
+	return nil
 }
 
 func (m *Model[M]) getQueryId(id interface{}) (bson.M, error) {
