@@ -289,6 +289,13 @@ func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
 			nameTag := field.Tag.Get("bson")
 			name := field.Type.Name()
 			val := ct.Field(i).Interface()
+
+			// Skip readonly fields during update/replace to prevent mass assignment
+			mongooseTag := field.Tag.Get("mongoose")
+			if mongooseTag == "readonly" && mutation != "insert" {
+				continue
+			}
+
 			if nameTag != "" && name != "BaseSchema" && !reflect.ValueOf(val).IsZero() {
 				upsert = append(upsert, bson.E{
 					Key:   nameTag,

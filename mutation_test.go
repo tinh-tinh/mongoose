@@ -200,3 +200,53 @@ func Test_StrictFilters_Mutation(t *testing.T) {
 		assert.NotContains(t, err.Error(), "dangerous MongoDB operator")
 	}
 }
+
+// ReadonlyTask has a protected Role field that cannot be modified via Update
+type ReadonlyTask struct {
+	mongoose.BaseSchema `bson:"inline"`
+	Name                string `bson:"name"`
+	Role                string `bson:"role" mongoose:"readonly"`
+}
+
+func (r ReadonlyTask) CollectionName() string {
+	return "readonly_tasks"
+}
+
+// Test_ReadonlyTag tests that fields tagged with mongoose:"readonly" cannot be modified via Update
+func Test_ReadonlyTag(t *testing.T) {
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[ReadonlyTask]()
+	model.SetConnect(connect)
+
+	// Clear before test
+	err := model.DeleteMany(nil)
+	assert.Nil(t, err)
+
+	// Create a document with Role set - this should work (insert is allowed)
+	_, err = model.Create(&ReadonlyTask{
+		Name: "test_user",
+		Role: "admin",
+	})
+	assert.Nil(t, err)
+
+	// Verify the document was created with the role
+	created, err := model.FindOne(nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, created)
+	assert.Equal(t, "admin", created.Role)
+	assert.Equal(t, "test_user", created.Name)
+
+	// Try to update the Role field - this should be ignored due to readonly tag
+	err = model.UpdateByID(created.ID, &ReadonlyTask{
+		Name: "updated_name",
+		Role: "superadmin", // This should be ignored
+	})
+	assert.Nil(t, err)
+
+	// Verify the Role was NOT changed, but Name was updated
+	updated, err := model.FindByID(created.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "admin", updated.Role)        // Should still be "admin"
+	assert.Equal(t, "updated_name", updated.Name) // Should be updated
+}
