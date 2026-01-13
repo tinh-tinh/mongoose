@@ -3,6 +3,7 @@ package tenancy
 import (
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/tinh-tinh/mongoose/v2"
 	"github.com/tinh-tinh/tinhtinh/v2/common"
@@ -20,6 +21,9 @@ const (
 )
 
 type ConnectMapper map[string]*mongoose.Connect
+
+// connectMapperMu protects concurrent access to ConnectMapper
+var connectMapperMu sync.RWMutex
 
 // CreateConnectMapper creates a provider named CONNECT_MAPPER which is a map of
 // tenant_id to *mongoose.Connect. The map is used to store the connection to the
@@ -60,12 +64,24 @@ func ForRoot(opt Options) core.Modules {
 					connectMapper = make(ConnectMapper)
 				}
 
-				if connectMapper[tenantId] == nil {
-					connectMapper[tenantId] = mongoose.New(opt.Uri)
-					connectMapper[tenantId].SetDB(tenantId)
+				// Check with read lock first
+				connectMapperMu.RLock()
+				conn := connectMapper[tenantId]
+				connectMapperMu.RUnlock()
+
+				if conn == nil {
+					// Acquire write lock for initialization
+					connectMapperMu.Lock()
+					defer connectMapperMu.Unlock()
+					// Double-check after acquiring write lock
+					if connectMapper[tenantId] == nil {
+						connectMapper[tenantId] = mongoose.New(opt.Uri)
+						connectMapper[tenantId].SetDB(tenantId)
+					}
+					conn = connectMapper[tenantId]
 				}
 
-				return connectMapper[tenantId]
+				return conn
 			},
 			Inject: []core.Provide{core.REQUEST, CONNECT_MAPPER},
 		})
