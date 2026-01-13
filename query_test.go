@@ -273,3 +273,57 @@ func Test_FailedFind(t *testing.T) {
 	_, err = model.FindOneAndDelete("abc")
 	assert.NotNil(t, err)
 }
+
+// Test_StrictFilters_Query tests that StrictFilters blocks dangerous operators in query functions
+func Test_StrictFilters_Query(t *testing.T) {
+	connect := mongoose.New(os.Getenv("MONGO_URI"))
+	connect.SetDB("test")
+	model := mongoose.NewModel[QueryTask](mongoose.ModelOptions{
+		StrictFilters: true,
+	})
+	model.SetConnect(connect)
+
+	maliciousFilter := map[string]interface{}{
+		"name": map[string]interface{}{"$ne": ""},
+	}
+
+	// Test FindOne blocks dangerous operators
+	_, err := model.FindOne(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test Find blocks dangerous operators
+	_, err = model.Find(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test Count blocks dangerous operators
+	_, err = model.Count(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test FindOneAndUpdate blocks dangerous operators
+	_, err = model.FindOneAndUpdate(maliciousFilter, &QueryTask{})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test FindOneAndReplace blocks dangerous operators
+	_, err = model.FindOneAndReplace(maliciousFilter, &QueryTask{})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test FindOneAndDelete blocks dangerous operators
+	_, err = model.FindOneAndDelete(maliciousFilter)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "$ne")
+
+	// Test safe struct filter is allowed
+	type SafeFilter struct {
+		Name string `bson:"name"`
+	}
+	_, err = model.FindOne(&SafeFilter{Name: "test"})
+	// This should not error due to sanitization (may error due to no docs found, which is fine)
+	if err != nil {
+		assert.NotContains(t, err.Error(), "dangerous MongoDB operator")
+	}
+}

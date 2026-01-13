@@ -77,6 +77,10 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 		return err
 	}
 
+	if err := m.sanitizeFilter(filter); err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
@@ -119,6 +123,10 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 		return err
 	}
 
+	if err := m.sanitizeFilter(filter); err != nil {
+		return err
+	}
+
 	query, err := ToDoc(filter)
 	if err != nil {
 		return err
@@ -149,6 +157,10 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 func (m *Model[M]) Delete(filter interface{}) error {
 	err := ExecutePreHook(Delete, m, filter)
 	if err != nil {
+		return err
+	}
+
+	if err := m.sanitizeFilter(filter); err != nil {
 		return err
 	}
 
@@ -185,6 +197,10 @@ func (m *Model[M]) DeleteByID(id interface{}) error {
 func (m *Model[M]) DeleteMany(filter interface{}) error {
 	err := ExecutePreHook(DeleteMany, m, filter)
 	if err != nil {
+		return err
+	}
+
+	if err := m.sanitizeFilter(filter); err != nil {
 		return err
 	}
 
