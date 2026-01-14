@@ -2,8 +2,6 @@ package mongoose
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -52,6 +50,9 @@ func (m *Model[M]) FindOne(filter interface{}, opts ...QueryOptions) (*M, error)
 	if opt.Ref != nil {
 		for _, ref := range opt.Ref {
 			refPath := m.getRefPath(ref)
+			if refPath == nil {
+				continue // Skip invalid ref names
+			}
 			aggLookup := bson.M{"$lookup": bson.M{
 				"from":         refPath.From,
 				"localField":   refPath.ForeignKey,
@@ -134,6 +135,9 @@ func (m *Model[M]) Find(filter interface{}, opts ...QueriesOptions) ([]*M, error
 	if opt.Ref != nil {
 		for _, ref := range opt.Ref {
 			refPath := m.getRefPath(ref)
+			if refPath == nil {
+				continue // Skip invalid ref names
+			}
 			aggLookup := bson.M{"$lookup": bson.M{
 				"from":         refPath.From,
 				"localField":   refPath.ForeignKey,
@@ -197,24 +201,7 @@ type RefPath struct {
 }
 
 func (m *Model[M]) getRefPath(ref string) *RefPath {
-	var model M
-	ct := reflect.ValueOf(&model).Elem()
-	for i := 0; i < ct.NumField(); i++ {
-		field := ct.Type().Field(i)
-		tag := field.Tag.Get("ref")
-		if tag != "" {
-			refStr := strings.Split(tag, "->")
-			foreignKey := refStr[0]
-			as := field.Tag.Get("bson")
-			foreignCol := refStr[1]
-			if foreignKey == ref {
-				return &RefPath{
-					From:       foreignCol,
-					ForeignKey: foreignKey,
-					As:         as,
-				}
-			}
-		}
-	}
-	return nil
+	// Use cached ref paths from type info
+	typeInfo := GetTypeInfo[M]()
+	return typeInfo.RefPaths[ref]
 }

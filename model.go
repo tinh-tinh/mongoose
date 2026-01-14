@@ -90,18 +90,9 @@ func (m *Model[M]) SetContext(ctx context.Context) {
 }
 
 // GetName returns the name of the collection in the database
+// Uses cached type info to avoid repeated reflection calls
 func (m *Model[M]) GetName() string {
-	var model M
-	ctModel := reflect.ValueOf(&model).Elem()
-
-	fnc := ctModel.MethodByName("CollectionName")
-	var name string
-	if fnc.IsValid() {
-		name = fnc.Call(nil)[0].String()
-	} else {
-		name = common.GetStructName(model)
-	}
-	return name
+	return GetCachedCollectionName[M]()
 }
 
 func (m *Model[M]) Index(idx bson.D, opt *options.IndexOptions) {
@@ -118,8 +109,9 @@ func (m *Model[M]) Index(idx bson.D, opt *options.IndexOptions) {
 // If the field is not tagged with bson, the field name is used as the key.
 // If the field is tagged with bson, the tag value is used as the key.
 // The given data must be a struct.
+// Uses cached type info to reduce reflection overhead.
 func (m *Model[M]) Set(data interface{}) {
-	var model M
+	typeInfo := GetTypeInfo[M]()
 
 	ctInput := reflect.ValueOf(data).Elem()
 	for i := range ctInput.NumField() {
@@ -127,14 +119,9 @@ func (m *Model[M]) Set(data interface{}) {
 		val := ctInput.Field(i).Interface()
 
 		if val != nil {
-			ctModel := reflect.ValueOf(&model).Elem()
-
-			if ctModel.FieldByName(name).IsValid() {
-				field, ok := ctModel.Type().FieldByName(name)
-				if ok {
-					key := field.Tag.Get("bson")
-					m.docs = append(m.docs, bson.E{Key: key, Value: val})
-				}
+			// Use FieldsByName for lookup (includes promoted fields from embedded structs)
+			if field, exists := typeInfo.FieldsByName[name]; exists && field.BsonTag != "" {
+				m.docs = append(m.docs, bson.E{Key: field.BsonTag, Value: val})
 			}
 		}
 	}
