@@ -2,11 +2,9 @@ package tenancy
 
 import (
 	"net/http"
-	"reflect"
 	"sync"
 
 	"github.com/tinh-tinh/mongoose/v2"
-	"github.com/tinh-tinh/tinhtinh/v2/common"
 	"github.com/tinh-tinh/tinhtinh/v2/core"
 )
 
@@ -120,18 +118,9 @@ func ForFeature(models ...mongoose.ModelCommon) core.Modules {
 // The model provider is created by the ForFeature function.
 // The name of the provider is the same as the name of the struct,
 // but with "Model_" prefixed.
+// Uses cached type info to avoid repeated reflection calls.
 func InjectModel[M any](module core.Module, ctx core.Ctx, name ...string) *mongoose.Model[M] {
-	var model M
-	ctModel := reflect.ValueOf(&model).Elem()
-
-	fnc := ctModel.MethodByName("CollectionName")
-
-	var modelName string
-	if fnc.IsValid() {
-		modelName = fnc.Call(nil)[0].String()
-	} else {
-		modelName = common.GetStructName(model)
-	}
+	modelName := mongoose.GetCachedCollectionName[M]()
 	data, ok := module.Ref(mongoose.GetModelName(modelName), ctx).(*mongoose.Model[M])
 	if !ok {
 		return nil

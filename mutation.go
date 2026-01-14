@@ -231,6 +231,7 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 // If mutation is "update", it sets the updatedAt to the current time.
 // The given data must be a struct.
 // It returns the validated data as a bson.E slice.
+// Uses cached type info to reduce reflection overhead.
 func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
 	if m.option.Validation {
 		err := ExecutePreHook(Validate, m, data)
@@ -250,20 +251,24 @@ func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
 	}
 
 	upsert := []bson.E{}
+	typeInfo := GetTypeInfo[M]()
 
 	if mutation == "insert" {
 		ct := reflect.ValueOf(data).Elem()
-		for i := range ct.NumField() {
-			field := ct.Type().Field(i)
-			name := field.Type.Name()
-			if name == "BaseSchema" {
-				ct.FieldByName(name).Set(reflect.ValueOf(BaseSchema{
+		// Use cached field info to find BaseSchema/BaseTimestamp fields (only top-level)
+		for _, field := range typeInfo.Fields {
+			// Only process top-level fields (IndexPath length == 1)
+			if len(field.IndexPath) != 1 {
+				continue
+			}
+			if field.TypeName == "BaseSchema" {
+				ct.Field(field.Index).Set(reflect.ValueOf(BaseSchema{
 					ID:        primitive.NewObjectID(),
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}))
-			} else if name == "BaseTimestamp" {
-				ct.FieldByName(name).Set(reflect.ValueOf(BaseTimestamp{
+			} else if field.TypeName == "BaseTimestamp" {
+				ct.Field(field.Index).Set(reflect.ValueOf(BaseTimestamp{
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}))
@@ -283,22 +288,28 @@ func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
 			})
 		}
 		ct := reflect.ValueOf(data).Elem()
-		for i := range ct.NumField() {
-			field := ct.Type().Field(i)
-
-			nameTag := field.Tag.Get("bson")
-			name := field.Type.Name()
-			val := ct.Field(i).Interface()
-
-			// Skip readonly fields during update/replace to prevent mass assignment
-			mongooseTag := field.Tag.Get("mongoose")
-			if mongooseTag == "readonly" && mutation != "insert" {
+		// Use cached field info for field iteration (only top-level fields)
+		for _, field := range typeInfo.Fields {
+			// Only process top-level fields (IndexPath length == 1)
+			if len(field.IndexPath) != 1 {
 				continue
 			}
 
-			if nameTag != "" && name != "BaseSchema" && !reflect.ValueOf(val).IsZero() {
+			// Skip embedded base types
+			if field.TypeName == "BaseSchema" || field.TypeName == "BaseTimestamp" {
+				continue
+			}
+
+			val := ct.Field(field.Index).Interface()
+
+			// Skip readonly fields during update/replace to prevent mass assignment
+			if field.MongooseTag == "readonly" && mutation != "insert" {
+				continue
+			}
+
+			if field.BsonTag != "" && !reflect.ValueOf(val).IsZero() {
 				upsert = append(upsert, bson.E{
-					Key:   nameTag,
+					Key:   field.BsonTag,
 					Value: val,
 				})
 			}
