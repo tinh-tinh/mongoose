@@ -54,8 +54,7 @@ func ExecutePostHook[M any](hookName HookName, model *Model[M], params ...any) e
 		if hook.Async {
 			go hook.Func(params...)
 		} else {
-			err := hook.Func(params...)
-			return err
+			return hook.Func(params...)
 		}
 	}
 	return nil

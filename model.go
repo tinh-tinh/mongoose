@@ -256,7 +256,6 @@ func (m *Model[M]) getQueryId(id interface{}) (bson.M, error) {
 		default:
 			return nil, fmt.Errorf("not support type %v", v)
 		}
-
 	} else {
 		query = bson.M{"_id": id}
 	}

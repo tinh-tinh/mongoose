@@ -23,7 +23,6 @@ func (b Models) CollectionName() string {
 }
 
 func Test_Model(t *testing.T) {
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 	model := mongoose.NewModel[Models]()
@@ -141,6 +140,7 @@ type User struct {
 func (u User) CollectionName() string {
 	return "indexes"
 }
+
 func TestIndex(t *testing.T) {
 	userModel := mongoose.NewModel[User]()
 	userModel.Index(bson.D{{Key: "email", Value: 1}}, options.Index().SetUnique(true))
