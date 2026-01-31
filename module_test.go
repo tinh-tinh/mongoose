@@ -23,7 +23,6 @@ func (b Book) CollectionName() string {
 }
 
 func Test_Module(t *testing.T) {
-
 	bookModel := mongoose.NewModel[Book]()
 
 	bookController := func(module core.Module) core.Controller {
@@ -42,7 +41,6 @@ func Test_Module(t *testing.T) {
 				Title:  "The Catcher in the Rye",
 				Author: "J. D. Salinger",
 			})
-
 			if err != nil {
 				return common.InternalServerException(ctx.Res(), err.Error())
 			}
@@ -133,7 +131,6 @@ func Test_ModuleFactory(t *testing.T) {
 				Title:  "The Catcher in the Rye",
 				Author: "J. D. Salinger",
 			})
-
 			if err != nil {
 				return common.InternalServerException(ctx.Res(), err.Error())
 			}

@@ -36,7 +36,6 @@ func Test_Module(t *testing.T) {
 				Title:  "The Catcher in the Rye",
 				Author: "J. D. Salinger",
 			})
-
 			if err != nil {
 				return common.InternalServerException(ctx.Res(), err.Error())
 			}

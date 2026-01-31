@@ -199,7 +199,6 @@ func (s SpecialTask) CollectionName() string {
 }
 
 func Test_NotTimestamp(t *testing.T) {
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 	model := mongoose.NewModel[SpecialTask](mongoose.ModelOptions{

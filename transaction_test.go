@@ -23,6 +23,7 @@ type Order struct {
 func (o Order) CollectionName() string {
 	return "orders"
 }
+
 func TestTransaction(t *testing.T) {
 	type QueryOrder struct {
 		Code string `bson:"code"`

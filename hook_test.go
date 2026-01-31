@@ -22,7 +22,6 @@ func (p PreTask) CollectionName() string {
 }
 
 func Test_Query_Pre_Hook(t *testing.T) {
-
 	type QueryTask struct {
 		Name string `bson:"name"`
 	}
@@ -155,7 +154,6 @@ func (t Task) CollectionName() string {
 }
 
 func Test_Mutation_Pre_Hook(t *testing.T) {
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 	model := mongoose.NewModel[Task]()
@@ -258,6 +256,7 @@ type ModelBook struct {
 func (b ModelBook) CollectionName() string {
 	return "model_hooks"
 }
+
 func Test_Save_Hook(t *testing.T) {
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
@@ -302,7 +301,6 @@ func (v ValidateHook) CollectionName() string {
 }
 
 func Test_Validate_Hook(t *testing.T) {
-
 	type QueryTask struct {
 		Name string `bson:"name"`
 	}

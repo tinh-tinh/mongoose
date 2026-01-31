@@ -67,7 +67,6 @@ func TestAggregate(t *testing.T) {
 }
 
 func TestFindOne(t *testing.T) {
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 

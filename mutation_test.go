@@ -19,7 +19,6 @@ func (t MutationTask) CollectionName() string {
 }
 
 func Test_Mutation(t *testing.T) {
-
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
 	model := mongoose.NewModel[MutationTask]()
