@@ -93,7 +93,7 @@ func (m *Model[M]) FindOneAndUpdate(filter interface{}, data *M, opt ...*options
 	if err != nil {
 		return nil, err
 	}
-	upsert, err := m.serializeData(data, "update")
+	upsert, err := m.beforeUpdate(data, false)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func (m *Model[M]) FindOneAndReplace(filter interface{}, data *M, opt ...*option
 		return nil, err
 	}
 
-	update, err := m.serializeData(data, "replace")
+	update, err := m.beforeUpdate(data, true)
 	if err != nil {
 		return nil, err
 	}
