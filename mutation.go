@@ -10,11 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var validation = validator.Validator{}
+
 // Create creates a new document in the collection using the provided input.
 // It validates the input data and inserts a new document into the collection.
 // Returns the result of the insertion as an *mongo.InsertOneResult and any error encountered.
 func (m *Model[M]) Create(input *M) (*mongo.InsertOneResult, error) {
-	_, err := m.serializeData(input, "insert")
+	err := m.beforeInsert(input)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (m *Model[M]) CreateMany(input []*M) (*mongo.InsertManyResult, error) {
 	data := make([]interface{}, 0)
 
 	for _, v := range input {
-		_, err := m.serializeData(v, "insert")
+		err := m.beforeInsert(v)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +88,7 @@ func (m *Model[M]) Update(filter interface{}, data *M) error {
 		return err
 	}
 
-	update, err := m.serializeData(data, "update")
+	update, err := m.beforeUpdate(data, false)
 	if err != nil {
 		return err
 	}
@@ -132,7 +134,7 @@ func (m *Model[M]) UpdateMany(filter interface{}, data *M) error {
 		return err
 	}
 
-	update, err := m.serializeData(data, "update")
+	update, err := m.beforeUpdate(data, false)
 	if err != nil {
 		return err
 	}
@@ -222,24 +224,65 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 	return nil
 }
 
-// serializeData validates and prepares the data for update/insert.
+// beforeInsert validates and prepares the data for insert.
 // It iterates over the struct fields of the given data and sets the corresponding field of the model to the value of the field.
-// If the field is not found in the model, it is not set.
-// If the field is tagged with bson, the tag value is used as the key.
-// If mutation is "insert", it sets the createdAt and updatedAt to the current time.
-// If mutation is "replace", it sets the createdAt to the current time.
-// If mutation is "update", it sets the updatedAt to the current time.
-// The given data must be a struct.
-// It returns the validated data as a bson.E slice.
-// Uses cached type info to reduce reflection overhead.
-func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
+// It sets the createdAt and updatedAt to the current time.
+func (m *Model[M]) beforeInsert(data *M) error {
+	if m.option.Validation {
+		err := ExecutePreHook(Validate, m, data)
+		if err != nil {
+			return err
+		}
+
+		err = validation.Validate(data)
+		if err != nil {
+			return err
+		}
+
+		err = ExecutePostHook(Validate, m)
+		if err != nil {
+			return err
+		}
+	}
+
+	typeInfo := GetTypeInfo[M]()
+	ct := reflect.ValueOf(data).Elem()
+	// Use cached field info to find BaseSchema/BaseTimestamp fields (only top-level)
+	for _, field := range typeInfo.Fields {
+		// Only process top-level fields (IndexPath length == 1)
+		if len(field.IndexPath) != 1 {
+			continue
+		}
+		switch field.TypeName {
+		case "BaseSchema":
+			ct.Field(field.Index).Set(reflect.ValueOf(BaseSchema{
+				ID:        primitive.NewObjectID(),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}))
+		case "BaseTimestamp":
+			ct.Field(field.Index).Set(reflect.ValueOf(BaseTimestamp{
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}))
+		}
+	}
+	return nil
+}
+
+// beforeUpdate validates and prepares the data for update/replace.
+// It validates the data and constructs a bson.E slice for the update.
+// If isReplace is true, it sets createdAt to current time (for replacement).
+// It always sets updatedAt to current time.
+// It respects "readonly" tags.
+func (m *Model[M]) beforeUpdate(data *M, isReplace bool) ([]bson.E, error) {
 	if m.option.Validation {
 		err := ExecutePreHook(Validate, m, data)
 		if err != nil {
 			return nil, err
 		}
 
-		err = validator.Scanner(data)
+		err = validation.Validate(data)
 		if err != nil {
 			return nil, err
 		}
@@ -253,66 +296,43 @@ func (m *Model[M]) serializeData(data *M, mutation string) ([]bson.E, error) {
 	upsert := []bson.E{}
 	typeInfo := GetTypeInfo[M]()
 
-	if mutation == "insert" {
-		ct := reflect.ValueOf(data).Elem()
-		// Use cached field info to find BaseSchema/BaseTimestamp fields (only top-level)
-		for _, field := range typeInfo.Fields {
-			// Only process top-level fields (IndexPath length == 1)
-			if len(field.IndexPath) != 1 {
-				continue
-			}
-			if field.TypeName == "BaseSchema" {
-				ct.Field(field.Index).Set(reflect.ValueOf(BaseSchema{
-					ID:        primitive.NewObjectID(),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}))
-			} else if field.TypeName == "BaseTimestamp" {
-				ct.Field(field.Index).Set(reflect.ValueOf(BaseTimestamp{
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}))
-			}
-		}
-	} else {
-		if m.option.Timestamp {
-			if mutation == "replace" {
-				upsert = append(upsert, bson.E{
-					Key:   "createdAt",
-					Value: time.Now(),
-				})
-			}
+	if m.option.Timestamp {
+		if isReplace {
 			upsert = append(upsert, bson.E{
-				Key:   "updatedAt",
+				Key:   "createdAt",
 				Value: time.Now(),
 			})
 		}
-		ct := reflect.ValueOf(data).Elem()
-		// Use cached field info for field iteration (only top-level fields)
-		for _, field := range typeInfo.Fields {
-			// Only process top-level fields (IndexPath length == 1)
-			if len(field.IndexPath) != 1 {
-				continue
-			}
+		upsert = append(upsert, bson.E{
+			Key:   "updatedAt",
+			Value: time.Now(),
+		})
+	}
+	ct := reflect.ValueOf(data).Elem()
+	// Use cached field info for field iteration (only top-level fields)
+	for _, field := range typeInfo.Fields {
+		// Only process top-level fields (IndexPath length == 1)
+		if len(field.IndexPath) != 1 {
+			continue
+		}
 
-			// Skip embedded base types
-			if field.TypeName == "BaseSchema" || field.TypeName == "BaseTimestamp" {
-				continue
-			}
+		// Skip embedded base types
+		if field.TypeName == "BaseSchema" || field.TypeName == "BaseTimestamp" {
+			continue
+		}
 
-			val := ct.Field(field.Index).Interface()
+		val := ct.Field(field.Index).Interface()
 
-			// Skip readonly fields during update/replace to prevent mass assignment
-			if field.MongooseTag == "readonly" && mutation != "insert" {
-				continue
-			}
+		// Skip readonly fields during update/replace to prevent mass assignment
+		if field.MongooseTag == "readonly" {
+			continue
+		}
 
-			if field.BsonTag != "" && !reflect.ValueOf(val).IsZero() {
-				upsert = append(upsert, bson.E{
-					Key:   field.BsonTag,
-					Value: val,
-				})
-			}
+		if field.BsonTag != "" && !reflect.ValueOf(val).IsZero() {
+			upsert = append(upsert, bson.E{
+				Key:   field.BsonTag,
+				Value: val,
+			})
 		}
 	}
 
