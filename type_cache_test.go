@@ -10,7 +10,7 @@ import (
 
 // BenchmarkModel for testing cached type info performance
 type BenchmarkModel struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Title               string `bson:"title"`
 	Author              string `bson:"author"`
 	Content             string `bson:"content"`
@@ -98,7 +98,7 @@ func BenchmarkFieldIteration_Reflect(b *testing.B) {
 
 // ModelWithRef for testing ref path caching
 type ModelWithRef struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	AuthorID            string `bson:"authorId" ref:"authorId->authors"`
 }
@@ -119,7 +119,7 @@ func (m ModelWithInvalidRef) CollectionName() string {
 
 // ModelNoRef has no ref tags
 type ModelNoRef struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 }
 

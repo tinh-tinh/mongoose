@@ -14,7 +14,7 @@ import (
 )
 
 type Book struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Title               string `bson:"title"`
 	Author              string `bson:"author"`
 }

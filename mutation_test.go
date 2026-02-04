@@ -9,7 +9,7 @@ import (
 )
 
 type MutationTask struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }
@@ -129,7 +129,7 @@ func Test_Mutation(t *testing.T) {
 }
 
 type Failed struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 }
 
@@ -202,7 +202,7 @@ func Test_StrictFilters_Mutation(t *testing.T) {
 
 // ReadonlyTask has a protected Role field that cannot be modified via Update
 type ReadonlyTask struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Role                string `bson:"role" mongoose:"readonly"`
 }

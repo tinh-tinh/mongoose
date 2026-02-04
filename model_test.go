@@ -13,9 +13,9 @@ import (
 )
 
 type Models struct {
-	mongoose.BaseSchema `bson:"inline"`
-	Title               string `bson:"title"`
-	Author              string `bson:"author"`
+	BaseSchema `bson:"inline"`
+	Title      string `bson:"title"`
+	Author     string `bson:"author"`
 }
 
 func (b Models) CollectionName() string {
@@ -67,10 +67,10 @@ type Address struct {
 }
 
 type Location struct {
-	mongoose.BaseSchema `bson:"inline"`
-	Longitude           float64  `bson:"longitude"`
-	Latitude            float64  `bson:"latitude"`
-	Address             *Address `bson:"address"`
+	BaseSchema `bson:"inline"`
+	Longitude  float64  `bson:"longitude"`
+	Latitude   float64  `bson:"latitude"`
+	Address    *Address `bson:"address"`
 }
 
 func (l Location) CollectionName() string {
@@ -132,9 +132,9 @@ func Test_Recusive(t *testing.T) {
 }
 
 type User struct {
-	mongoose.BaseSchema `bson:"inline"`
-	Email               string `bson:"email"`
-	Name                string `bson:"name"`
+	BaseSchema `bson:"inline"`
+	Email      string `bson:"email"`
+	Name       string `bson:"name"`
 }
 
 func (u User) CollectionName() string {
@@ -156,11 +156,10 @@ func Test_ToDoc(t *testing.T) {
 }
 
 type Student struct {
-	mongoose.BaseTimestamp `bson:"inline"`
-	ID                     int    `bson:"_id"`
-	FirstName              string `bson:"firstName" validate:"isAlpha"`
-	LastName               string `bson:"lastName" validate:"isAlpha"`
-	Email                  string `bson:"email" validate:"isEmail"`
+	BaseTimestamp `bson:"inline"`
+	FirstName     string `bson:"firstName" validate:"isAlpha"`
+	LastName      string `bson:"lastName" validate:"isAlpha"`
+	Email         string `bson:"email" validate:"isEmail"`
 }
 
 func (s Student) CollectionName() string {
@@ -184,7 +183,6 @@ func Test_Validator(t *testing.T) {
 	require.NotNil(t, err)
 
 	_, err = model.Create(&Student{
-		ID:        1,
 		FirstName: "John",
 		LastName:  "Dpe",
 		Email:     "john@gmail.com",
@@ -204,7 +202,6 @@ func Test_Validator(t *testing.T) {
 
 	_, err = model.CreateMany([]*Student{
 		{
-			ID:        2,
 			FirstName: "Ricardo",
 			LastName:  "Kaka",
 			Email:     "kaka@gmail.com",

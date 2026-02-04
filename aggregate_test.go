@@ -11,7 +11,7 @@ import (
 )
 
 type Department struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 }
 
@@ -20,7 +20,7 @@ func (d Department) CollectionName() string {
 }
 
 type Employee struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string             `bson:"name"`
 	Age                 int                `bson:"age"`
 	DepartmentID        primitive.ObjectID `bson:"departmentID"`
