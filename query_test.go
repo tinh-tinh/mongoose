@@ -10,7 +10,7 @@ import (
 )
 
 type QueryTask struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }

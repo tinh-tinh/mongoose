@@ -12,7 +12,7 @@ import (
 )
 
 type PreTask struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }
@@ -61,7 +61,7 @@ func Test_Query_Pre_Hook(t *testing.T) {
 }
 
 type PostTask struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }
@@ -144,7 +144,7 @@ func Test_Query_Post_Hook(t *testing.T) {
 }
 
 type Task struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }
@@ -248,7 +248,7 @@ func Test_Mutation_Post_Hook(t *testing.T) {
 }
 
 type ModelBook struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Title               string `bson:"title"`
 	Author              string `bson:"author"`
 }
@@ -291,7 +291,7 @@ func Test_Save_Hook(t *testing.T) {
 }
 
 type ValidateHook struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Name                string `bson:"name"`
 	Status              string `bson:"status"`
 }

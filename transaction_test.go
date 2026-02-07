@@ -15,7 +15,7 @@ import (
 )
 
 type Order struct {
-	mongoose.BaseSchema `bson:"inline"`
+	BaseSchema `bson:"inline"`
 	Code                string `bson:"code"`
 	Paid                int    `bson:"paid"`
 }

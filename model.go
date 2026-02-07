@@ -16,17 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type BaseSchema struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	CreatedAt time.Time          `bson:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt"`
-}
-
-type BaseTimestamp struct {
-	CreatedAt time.Time `bson:"createdAt"`
-	UpdatedAt time.Time `bson:"updatedAt"`
-}
-
 type ModelCommon interface {
 	SetConnect(connect *Connect)
 	GetName() string

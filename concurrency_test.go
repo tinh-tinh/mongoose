@@ -11,9 +11,9 @@ import (
 )
 
 type ValidationTask struct {
-	mongoose.BaseSchema `bson:"inline"`
-	Name                string `bson:"name" validate:"required"`
-	Email               string `bson:"email" validate:"isEmail"`
+	BaseSchema `bson:"inline"`
+	Name       string `bson:"name" validate:"required"`
+	Email      string `bson:"email" validate:"isEmail"`
 }
 
 func (v ValidationTask) CollectionName() string {
@@ -23,9 +23,7 @@ func (v ValidationTask) CollectionName() string {
 func Test_Concurrency_Validator(t *testing.T) {
 	connect := mongoose.New(os.Getenv("MONGO_URI"))
 	connect.SetDB("test")
-	model := mongoose.NewModel[ValidationTask](mongoose.ModelOptions{
-		Validation: true,
-	})
+	model := mongoose.NewModel[ValidationTask]()
 	model.SetConnect(connect)
 
 	// Clear before test

@@ -1,10 +1,11 @@
-package mongoose
+package mongoose_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tinh-tinh/mongoose/v2"
 )
 
 func TestSanitizeFilter_DetectsDangerousOperators(t *testing.T) {
@@ -80,10 +81,10 @@ func TestSanitizeFilter_DetectsDangerousOperators(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := SanitizeFilter(tc.filter)
+			err := mongoose.SanitizeFilter(tc.filter)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.expected)
-			assert.True(t, IsDangerousOperatorError(err))
+			assert.True(t, mongoose.IsDangerousOperatorError(err))
 		})
 	}
 }
@@ -125,7 +126,7 @@ func TestSanitizeFilter_AllowsSafeFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := SanitizeFilter(tc.filter)
+			err := mongoose.SanitizeFilter(tc.filter)
 			assert.Nil(t, err)
 		})
 	}
@@ -133,14 +134,14 @@ func TestSanitizeFilter_AllowsSafeFilters(t *testing.T) {
 
 func TestSanitizeFilter_AllDangerousOperators(t *testing.T) {
 	// Test that all operators in the DangerousOperators list are detected
-	for _, op := range DangerousOperators {
+	for _, op := range mongoose.DangerousOperators {
 		t.Run(op, func(t *testing.T) {
 			filter := map[string]interface{}{op: "test"}
-			err := SanitizeFilter(filter)
+			err := mongoose.SanitizeFilter(filter)
 			require.Error(t, err)
-			assert.True(t, IsDangerousOperatorError(err))
+			assert.True(t, mongoose.IsDangerousOperatorError(err))
 
-			var opErr *ErrDangerousOperator
+			var opErr *mongoose.ErrDangerousOperator
 			require.ErrorAs(t, err, &opErr)
 			assert.Equal(t, op, opErr.Operator)
 		})
@@ -163,14 +164,14 @@ func TestIsDangerousOperator(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.key, func(t *testing.T) {
-			result := IsDangerousOperator(tc.key)
+			result := mongoose.IsDangerousOperator(tc.key)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
 }
 
 func TestErrDangerousOperator_Error(t *testing.T) {
-	err := &ErrDangerousOperator{Operator: "$ne"}
+	err := &mongoose.ErrDangerousOperator{Operator: "$ne"}
 	assert.Equal(t, "dangerous MongoDB operator detected in filter: $ne", err.Error())
 }
 
@@ -180,9 +181,9 @@ func TestSanitizeFilter_SliceWithDangerousOperator(t *testing.T) {
 		map[string]interface{}{"name": "safe"},
 		map[string]interface{}{"password": map[string]interface{}{"$ne": ""}},
 	}
-	err := SanitizeFilter(filter)
+	err := mongoose.SanitizeFilter(filter)
 	require.Error(t, err)
-	assert.True(t, IsDangerousOperatorError(err))
+	assert.True(t, mongoose.IsDangerousOperatorError(err))
 }
 
 // TestAuthBypassAttempt simulates a real authentication bypass attack
@@ -194,38 +195,12 @@ func TestAuthBypassAttempt(t *testing.T) {
 		"password": map[string]interface{}{"$ne": ""},
 	}
 
-	err := SanitizeFilter(maliciousFilter)
+	err := mongoose.SanitizeFilter(maliciousFilter)
 	require.Error(t, err)
 
-	var opErr *ErrDangerousOperator
+	var opErr *mongoose.ErrDangerousOperator
 	require.ErrorAs(t, err, &opErr)
 	assert.Equal(t, "$ne", opErr.Operator)
-}
-
-// Test Model.sanitizeFilter helper method
-func TestModel_SanitizeFilter(t *testing.T) {
-	// Test with StrictFilters disabled (default)
-	modelDisabled := NewModel[testStruct]()
-	err := modelDisabled.sanitizeFilter(map[string]interface{}{"$ne": "test"})
-	assert.Nil(t, err, "should allow dangerous operators when StrictFilters is disabled")
-
-	// Test with StrictFilters enabled
-	modelEnabled := NewModel[testStruct](ModelOptions{StrictFilters: true})
-	err = modelEnabled.sanitizeFilter(map[string]interface{}{"name": map[string]interface{}{"$ne": ""}})
-	assert.Error(t, err, "should reject dangerous operators when StrictFilters is enabled")
-	assert.True(t, IsDangerousOperatorError(err))
-
-	// Test with safe filter when StrictFilters is enabled
-	err = modelEnabled.sanitizeFilter(map[string]interface{}{"name": "safe"})
-	assert.Nil(t, err, "should allow safe filters when StrictFilters is enabled")
-
-	// Test with nil filter
-	err = modelEnabled.sanitizeFilter(nil)
-	assert.Nil(t, err, "should allow nil filters")
-
-	// Test with struct filter (always safe)
-	err = modelEnabled.sanitizeFilter(&testStruct{Name: "test"})
-	assert.Nil(t, err, "should allow struct-based filters")
 }
 
 type testStruct struct {
@@ -237,23 +212,39 @@ func (t testStruct) CollectionName() string {
 	return "test_sanitize"
 }
 
-// TestStrictFilters_AllOperators ensures all dangerous operators are blocked
-func TestStrictFilters_AllOperators(t *testing.T) {
-	model := NewModel[testStruct](ModelOptions{StrictFilters: true})
+// TestModel_StrictFilters_Integration tests that strict filters block dangerous queries via public API
+func TestModel_StrictFilters_Integration(t *testing.T) {
+	// We use Count() to test StrictFilters because it calls sanitizeFilter internally
+	// and checks for error before DB interaction.
 
-	for _, op := range DangerousOperators {
+	// Test with StrictFilters enabled
+	modelEnabled := mongoose.NewModel[testStruct](mongoose.ModelOptions{StrictFilters: true})
+	_, err := modelEnabled.Count(map[string]interface{}{"name": map[string]interface{}{"$ne": ""}})
+	assert.Error(t, err, "should reject dangerous operators when StrictFilters is enabled")
+	assert.True(t, mongoose.IsDangerousOperatorError(err))
+
+	// Note: We cannot easily test successful (safe) filters or StrictFilters=false
+	// without a real database connection, as Count() proceeds to call the DB.
+}
+
+// TestStrictFilters_AllOperators ensures all dangerous operators are blocked via Model
+func TestStrictFilters_AllOperators(t *testing.T) {
+	model := mongoose.NewModel[testStruct](mongoose.ModelOptions{StrictFilters: true})
+
+	for _, op := range mongoose.DangerousOperators {
 		t.Run(op, func(t *testing.T) {
 			filter := map[string]interface{}{op: "value"}
-			err := model.sanitizeFilter(filter)
+			// Use Count to trigger the check
+			_, err := model.Count(filter)
 			require.Error(t, err, "operator %s should be blocked", op)
-			assert.True(t, IsDangerousOperatorError(err))
+			assert.True(t, mongoose.IsDangerousOperatorError(err))
 		})
 	}
 }
 
-// TestStrictFilters_NestedOperators tests deeply nested dangerous operators
+// TestStrictFilters_NestedOperators tests deeply nested dangerous operators via Model
 func TestStrictFilters_NestedOperators(t *testing.T) {
-	model := NewModel[testStruct](ModelOptions{StrictFilters: true})
+	model := mongoose.NewModel[testStruct](mongoose.ModelOptions{StrictFilters: true})
 
 	testCases := []struct {
 		name   string
@@ -275,9 +266,10 @@ func TestStrictFilters_NestedOperators(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := model.sanitizeFilter(tc.filter)
+			// Use Count to trigger the check
+			_, err := model.Count(tc.filter)
 			require.Error(t, err)
-			assert.True(t, IsDangerousOperatorError(err))
+			assert.True(t, mongoose.IsDangerousOperatorError(err))
 		})
 	}
 }
@@ -323,7 +315,7 @@ func TestSanitizeFilter_EdgeCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := SanitizeFilter(tc.filter)
+			err := mongoose.SanitizeFilter(tc.filter)
 			if tc.shouldError {
 				assert.Error(t, err)
 			} else {

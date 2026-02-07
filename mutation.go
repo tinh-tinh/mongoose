@@ -225,8 +225,8 @@ func (m *Model[M]) DeleteMany(filter interface{}) error {
 }
 
 // beforeInsert validates and prepares the data for insert.
-// It iterates over the struct fields of the given data and sets the corresponding field of the model to the value of the field.
-// It sets the createdAt and updatedAt to the current time.
+// It sets the _id field if m.option.ID is true.
+// It sets createdAt and updatedAt to the current time if m.option.Timestamp is true.
 func (m *Model[M]) beforeInsert(data *M) error {
 	if m.option.Validation {
 		err := ExecutePreHook(Validate, m, data)
@@ -247,33 +247,41 @@ func (m *Model[M]) beforeInsert(data *M) error {
 
 	typeInfo := GetTypeInfo[M]()
 	ct := reflect.ValueOf(data).Elem()
-	// Use cached field info to find BaseSchema/BaseTimestamp fields (only top-level)
-	for _, field := range typeInfo.Fields {
-		// Only process top-level fields (IndexPath length == 1)
-		if len(field.IndexPath) != 1 {
-			continue
-		}
-		switch field.TypeName {
-		case "BaseSchema":
-			ct.Field(field.Index).Set(reflect.ValueOf(BaseSchema{
-				ID:        primitive.NewObjectID(),
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}))
-		case "BaseTimestamp":
-			ct.Field(field.Index).Set(reflect.ValueOf(BaseTimestamp{
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}))
+
+	// Set _id field if option.ID is true
+	if m.option.ID {
+		if idField, exists := typeInfo.FieldsByBson["_id"]; exists {
+			fieldVal := ct.FieldByIndex(idField.IndexPath)
+			if fieldVal.Type() == reflect.TypeOf(primitive.ObjectID{}) {
+				fieldVal.Set(reflect.ValueOf(primitive.NewObjectID()))
+			}
 		}
 	}
+
+	// Set timestamp fields if option.Timestamp is true
+	if m.option.Timestamp {
+		now := time.Now()
+		if createdAtField, exists := typeInfo.FieldsByBson["createdAt"]; exists {
+			fieldVal := ct.FieldByIndex(createdAtField.IndexPath)
+			if fieldVal.Type() == reflect.TypeOf(time.Time{}) {
+				fieldVal.Set(reflect.ValueOf(now))
+			}
+		}
+		if updatedAtField, exists := typeInfo.FieldsByBson["updatedAt"]; exists {
+			fieldVal := ct.FieldByIndex(updatedAtField.IndexPath)
+			if fieldVal.Type() == reflect.TypeOf(time.Time{}) {
+				fieldVal.Set(reflect.ValueOf(now))
+			}
+		}
+	}
+
 	return nil
 }
 
 // beforeUpdate validates and prepares the data for update/replace.
 // It validates the data and constructs a bson.E slice for the update.
-// If isReplace is true, it sets createdAt to current time (for replacement).
-// It always sets updatedAt to current time.
+// If isReplace is true and m.option.Timestamp is true, it sets createdAt to current time.
+// If m.option.Timestamp is true, it sets updatedAt to current time.
 // It respects "readonly" tags.
 func (m *Model[M]) beforeUpdate(data *M, isReplace bool) ([]bson.E, error) {
 	if m.option.Validation {
@@ -295,20 +303,24 @@ func (m *Model[M]) beforeUpdate(data *M, isReplace bool) ([]bson.E, error) {
 
 	upsert := []bson.E{}
 	typeInfo := GetTypeInfo[M]()
-
-	if m.option.Timestamp {
-		if isReplace {
-			upsert = append(upsert, bson.E{
-				Key:   "createdAt",
-				Value: time.Now(),
-			})
-		}
-		upsert = append(upsert, bson.E{
-			Key:   "updatedAt",
-			Value: time.Now(),
-		})
-	}
 	ct := reflect.ValueOf(data).Elem()
+
+	// Set timestamp fields if option.Timestamp is true and fields exist
+	if m.option.Timestamp {
+		now := time.Now()
+		if isReplace {
+			if createdAtField, exists := typeInfo.FieldsByBson["createdAt"]; exists {
+				if ct.FieldByIndex(createdAtField.IndexPath).Type() == reflect.TypeOf(time.Time{}) {
+					upsert = append(upsert, bson.E{Key: "createdAt", Value: now})
+				}
+			}
+		}
+		if updatedAtField, exists := typeInfo.FieldsByBson["updatedAt"]; exists {
+			if ct.FieldByIndex(updatedAtField.IndexPath).Type() == reflect.TypeOf(time.Time{}) {
+				upsert = append(upsert, bson.E{Key: "updatedAt", Value: now})
+			}
+		}
+	}
 	// Use cached field info for field iteration (only top-level fields)
 	for _, field := range typeInfo.Fields {
 		// Only process top-level fields (IndexPath length == 1)
@@ -316,18 +328,17 @@ func (m *Model[M]) beforeUpdate(data *M, isReplace bool) ([]bson.E, error) {
 			continue
 		}
 
-		// Skip embedded base types
-		if field.TypeName == "BaseSchema" || field.TypeName == "BaseTimestamp" {
+		// Skip _id and timestamp fields (handled separately via ModelOptions)
+		if field.BsonTag == "_id" || field.BsonTag == "createdAt" || field.BsonTag == "updatedAt" {
 			continue
 		}
-
-		val := ct.Field(field.Index).Interface()
 
 		// Skip readonly fields during update/replace to prevent mass assignment
 		if field.MongooseTag == "readonly" {
 			continue
 		}
 
+		val := ct.Field(field.Index).Interface()
 		if field.BsonTag != "" && !reflect.ValueOf(val).IsZero() {
 			upsert = append(upsert, bson.E{
 				Key:   field.BsonTag,
