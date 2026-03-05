@@ -37,6 +37,7 @@ type ModelOptions struct {
 	ID            bool
 	Validation    bool
 	StrictFilters bool // When true, rejects filters containing MongoDB operators
+	Indexes       []mongo.IndexModel
 }
 
 // NewModel returns a new instance of Model[M] with the given connect and name
@@ -54,7 +55,8 @@ func NewModel[M any](opts ...ModelOptions) *Model[M] {
 	}
 
 	return &Model[M]{
-		option: &defaultOption,
+		option:  &defaultOption,
+		indexes: defaultOption.Indexes,
 	}
 }
 
